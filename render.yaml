@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: infieles-back
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
