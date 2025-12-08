@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Nacional de Infieles</title>
+    <style>
+        :root{--azul:#007bff;--rojo:#dc3545;--fondo:#f8f9fa;--blanco:#fff;--gris:#6c757d;--texto:#212529}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:system-ui,Arial,sans-serif;background:var(--fondo);color:var(--texto);max-width:500px;margin:0 auto;min-height:100vh}
+        #solo-pc{display:none;text-align:center;padding:60px;background:#fff;min-height:100vh;font-size:1.3em}
+        @media(min-width:768px){body>*:not(#solo-pc){display:none}#solo-pc{display:block}}
+        header{text-align:center;padding:35px 15px;background:var(--blanco);border-bottom:5px solid var(--azul);box-shadow:0 3px 10px rgba(0,123,255,.15)}
+        h1{font-size:2.1em;color:var(--azul)}
+        .btn{padding:15px 20px;font-size:1.05em;border:none;border-radius:10px;cursor:pointer;font-weight:bold;margin:12px 10px;width:88%}
+        .btn-azul{background:var(--azul);color:white}
+        .btn-rojo{background:var(--rojo);color:white}
+        #search-section{padding:25px 15px;background:var(--blanco);text-align:center}
+        #search-input{width:94%;padding:16px;border:2px solid #ced4da;border-radius:30px;font-size:1.1em;text-align:center}
+        #lista-infieles{padding:10px;display:flex;flex-direction:column;gap:18px}
+        .card{background:var(--blanco);border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.1);border:1px solid #e9ecef}
+        .card-header{background:var(--azul);color:white;padding:18px;text-align:center;font-size:1.25em;font-weight:bold}
+        .card-body{padding:18px}
+        .info{margin:10px 0;color:var(--gris)}
+        .info strong{color:var(--texto)}
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);z-index:1000;justify-content:center;align-items:center;padding:15px}
+        .modal.active{display:flex}
+        .modal-content{background:white;border-radius:14px;padding:25px;width:100%;max-height:92vh;overflow-y:auto;position:relative}
+        .close{position:absolute;top:10px;right:15px;font-size:32px;cursor:pointer;color:#999}
+        .galeria img,.comentario img{width:100%!important;height:auto!important;border-radius:10px;margin:12px 0;display:block;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+        label{display:block;margin:18px 0 8px;font-weight:bold}
+        input,textarea{width:100%;padding:14px;border:1.5px solid #ddd;border-radius:10px;font-size:1em}
+        textarea{min-height:120px}
+        .votos{display:flex;gap:10px;margin:25px 0}
+        .voto-btn{flex:1;padding:14px;border-radius:10px;color:white;border:none;font-weight:bold}
+        .comentarios{margin-top:30px;border-top:2px solid #eee;padding-top:20px}
+        .comentario{background:#f8f9fa;padding:15px;border-radius:10px;margin:15px 0;border-left:4px solid var(--azul)}
+    </style>
+</head>
+<body>
+
+<script>
+const API = "https://TU-APP-RENDER.onrender.com"; // ← CAMBIA AQUÍ TU URL
+</script>
+
+<div id="solo-pc">
+    <h2>Este sitio es solo para celulares</h2>
+    <p>Abre desde tu teléfono</p>
+</div>
+
+<div id="age-modal" class="modal active">
+    <div class="modal-content">
+        <h2>Confirmación de Edad</h2>
+        <p>Este contenido es solo para mayores de 18 años</p>
+        <button class="btn btn-azul" onclick="confirmAge(true)">Sí, tengo 18+</button>
+        <button class="btn btn-rojo" onclick="confirmAge(false)">No</button>
+    </div>
+</div>
+
+<div id="main-content" style="display:none;">
+    <header>
+        <h1>Registro de Infieles</h1>
+        <p>El chisme que todos quieren ver</p>
+        <button class="btn btn-azul" id="btn-agregar">+ Exponer Infiel</button>
+        <button class="btn btn-rojo" id="btn-legal">Información Legal Importante</button>
+    </header>
+
+    <section id="search-section">
+        <input type="text" id="search-input" placeholder="Buscar por nombre o ciudad..." onkeyup="filtrar()">
+    </section>
+
+    <div id="lista-infieles"></div>
+</div>
+
+<!-- Modal Formulario -->
+<div id="modal-form" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="cerrarModal()">×</span>
+        <h2>Nuevo Chisme</h2>
+        <form id="form-infiel">
+            <label>Tu nick (opcional - si no pones, serás Anónimo)</label>
+            <input type="text" id="reportero">
+            <label>Nombre del infiel</label>
+            <input type="text" id="nombre" required>
+            <label>Apellido</label>
+            <input type="text" id="apellido" required>
+            <label>Edad</label>
+            <input type="number" id="edad" min="18" required>
+            <label>De dónde es</label>
+            <input type="text" id="ubicacion" required>
+            <label>Todo el chisme (detalles completos)</label>
+            <textarea id="historia" required></textarea>
+            <label>Pruebas (fotos)</label>
+            <input type="file" id="pruebas" accept="image/*" multiple>
+            <button type="submit" class="btn btn-azul" style="margin-top:20px">Publicar Chisme</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Detalle -->
+<div id="modal-chisme" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="cerrarDetalle()">×</span>
+        <div id="detalle-chisme"></div>
+    </div>
+</div>
+
+<!-- Modal Legal -->
+<div id="modal-legal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="cerrarLegal()">×</span>
+        <h2>Información Legal Importante</h2>
+        <p><strong>Este sitio es de entretenimiento y sátira.</strong></p>
+        <p>Todas las historias son consideradas <strong>ficticias</strong> salvo prueba legal en contrario.</p>
+        <p>Prohibido: datos de menores, pornografía de venganza, acoso.</p>
+        <p>Usas bajo tu propia responsabilidad.</p>
+        <button class="btn btn-rojo" onclick="cerrarLegal()" style="margin-top:20px">Entendido</button>
+    </div>
+</div>
+
+<script>
+// VALIDACIÓN MAYOR DE EDAD
+function confirmAge(ok){
+    if(ok){
+        localStorage.setItem("adult", "1");
+        document.getElementById("age-modal").classList.remove("active");
+        document.getElementById("main-content").style.display = "block";
+    } else {
+        alert("No puedes entrar");
+    }
+}
+
+if(localStorage.getItem("adult") === "1"){
+    document.getElementById("age-modal").classList.remove("active");
+    document.getElementById("main-content").style.display = "block";
+}
+
+// CARGAR LISTA PRINCIPAL DESDE RENDER
+async function cargarLista(){
+    const res = await fetch(API + "/infieles");
+    const lista = await res.json();
+    const cont = document.getElementById("lista-infieles");
+
+    cont.innerHTML = "";
+
+    lista.forEach(i=>{
+        cont.innerHTML += `
+        <div class="card" onclick="verChisme('${i.id}')">
+            <div class="card-header">${i.nombre} ${i.apellido}</div>
+            <div class="card-body">
+                <p class="info"><strong>Ubicación:</strong> ${i.ubicacion}</p>
+                <p>${i.historia.substring(0,80)}... <strong>Ver más</strong></p>
+            </div>
+        </div>`;
+    });
+}
+
+cargarLista();
+
+// VER DETALLE
+async function verChisme(id){
+    const res = await fetch(API + "/infieles/" + id);
+    const i = await res.json();
+
+    if(!i.votos){ i.votos = {aprobar:0,refutar:0,denunciar:0}; }
+    if(!i.comentarios){ i.comentarios = []; }
+
+    const total = i.votos.aprobar + i.votos.refutar + i.votos.denunciar || 1;
+    const pA = Math.round((i.votos.aprobar/total)*100);
+    const pR = Math.round((i.votos.refutar/total)*100);
+    const pD = Math.round((i.votos.denunciar/total)*100);
+
+    const galeria = i.imagenes?.length
+        ? i.imagenes.map(src=>`<img src="${src}">`).join("")
+        : `<p style="color:#888">Sin pruebas iniciales</p>`;
+
+    let comentariosHTML = i.comentarios.map(c=>`
+    <div class="comentario">
+        <strong>${c.nick}</strong><br>
+        ${c.texto}
+        ${c.img ? `<img src="${c.img}">` : ""}
+    </div>
+    `).join("");
+
+    document.getElementById("detalle-chisme").innerHTML = `
+        <h2>${i.nombre} ${i.apellido}</h2>
+
+        <p><strong>Reportado por:</strong> ${i.reportero}</p>
+        <p><strong>Ubicación:</strong> ${i.ubicacion}</p>
+
+        <hr>
+
+        <p>${i.historia.replace(/\n/g,'<br>')}</p>
+
+        <h3>Pruebas Iniciales</h3>
+        <div class="galeria">${galeria}</div>
+
+        <h3>Votación del Caso</h3>
+
+        <div class="votos">
+            <button class="voto-btn" style="background:#28a745" onclick="votar('${id}','aprobar')">Aprobar</button>
+            <button class="voto-btn" style="background:#dc3545" onclick="votar('${id}','refutar')">Refutar</button>
+            <button class="voto-btn" style="background:#fd7e14" onclick="votar('${id}','denunciar')">Denunciar</button>
+        </div>
+
+        <p>✔️ Aprobado: ${pA}%</p>
+        <p>❌ Refutado: ${pR}%</p>
+        <p>⚠️ Denunciado: ${pD}%</p>
+
+        <div class="comentarios">
+            <h3>Comentarios</h3>
+            ${comentariosHTML || "<p style='color:#777'>No hay comentarios</p>"}
+
+            <label>Tu nick (opcional)</label>
+            <input id="nick-comentario">
+
+            <label>Comentario</label>
+            <textarea id="texto-comentario"></textarea>
+
+            <label>Prueba adicional</label>
+            <input type="file" id="img-comentario">
+
+            <div id="estado-img" style="margin-top:10px;color:#007bff"></div>
+
+            <button class="btn btn-azul" onclick="comentar('${id}')">Comentar</button>
+        </div>
+    `;
+
+    document.getElementById("modal-chisme").classList.add("active");
+}
+
+// VOTAR
+async function votar(id,tipo){
+    await fetch(API + "/votar/"+id,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({tipo})
+    });
+
+    alert("Voto registrado");
+    verChisme(id);
+}
+
+// COMENTAR
+async function comentar(id){
+    const nick = document.getElementById("nick-comentario").value || "Anónimo";
+    const texto = document.getElementById("texto-comentario").value;
+    const file = document.getElementById("img-comentario").files[0];
+
+    let img = "";
+
+    if(file){
+        document.getElementById("estado-img").innerText = "Subiendo imagen...";
+        img = await toBase64(file);
+    }
+
+    await fetch(API + "/comentarios/"+id,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({nick,texto,img})
+    });
+
+    document.getElementById("estado-img").innerText = "";
+    alert("Comentario publicado");
+    verChisme(id);
+}
+
+function toBase64(file){
+    return new Promise((res,rej)=>{
+        const r = new FileReader();
+        r.onload =()=> res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+    });
+}
+
+// MODALES
+function cerrarModal(){ document.getElementById("modal-form").classList.remove("active"); }
+function cerrarDetalle(){ document.getElementById("modal-chisme").classList.remove("active"); }
+function cerrarLegal(){ document.getElementById("modal-legal").classList.remove("active"); }
+</script>
+
+</body>
+</html>
