@@ -1,123 +1,81 @@
 import express from "express";
 import cors from "cors";
-import pkg from "pg";
+import bodyParser from "body-parser";
+import pg from "pg";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const { Pool } = pkg;
-const app = express();
-
-// Para usar rutas absolutas
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware
+const app = express();
 app.use(cors());
-app.use(express.json({ limit: "50mb" }));
+app.use(bodyParser.json());
 
-// SERVIR FRONTEND desde /public
-app.use(express.static(path.join(__dirname, "public")));
-
-// ==========================
-// CONEXIÓN A RENDER POSTGRES
-// ==========================
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+// 🟢 CONEXIÓN A POSTGRES DE RENDER
+const pool = new pg.Pool({
+  host: "dpg-d4rm7umuk2gs73eauuug-a.virginia-postgres.render.com",
+  user: "infieles",
+  password: "cQ1eK3awcS9J8l6pgLm0P20VbLZikt5W",
+  database: "dbinfieles",
+  port: 5432,
   ssl: { rejectUnauthorized: false }
 });
 
-// ==========================
-// API: GUARDAR REPORTE
-// ==========================
+// 🟢 Servir frontend
+app.use(express.static("public"));
+
+
+// =============================
+//     API PARA REGISTROS
+// =============================
+
+// Guardar infiel
 app.post("/api/infieles", async (req, res) => {
   try {
-    const { reportero, nombre, apellido, edad, ubicacion, historia, imagenes } = req.body;
+    const {
+      reportero,
+      nombre,
+      apellido,
+      edad,
+      ubicacion,
+      historia,
+      imagenes
+    } = req.body;
 
     const result = await pool.query(
       `INSERT INTO infieles (reportero, nombre, apellido, edad, ubicacion, historia, imagenes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       RETURNING id`,
       [reportero, nombre, apellido, edad, ubicacion, historia, imagenes]
     );
 
-    res.json(result.rows[0]);
+    res.json({ ok: true, id: result.rows[0].id });
   } catch (err) {
-    console.error("ERROR AL GUARDAR REPORTE:", err);
-    res.status(500).json({ error: "No se pudo guardar el reporte" });
+    console.error("ERROR DB:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// ==========================
-// API: LISTAR REPORTES
-// ==========================
+
+// Obtener todos
 app.get("/api/infieles", async (req, res) => {
-  const r = await pool.query(`SELECT * FROM infieles ORDER BY id DESC`);
+  const r = await pool.query("SELECT * FROM infieles ORDER BY id DESC");
   res.json(r.rows);
 });
 
-// ==========================
-// API: OBTENER UN REPORTE
-// ==========================
+
+// Obtener uno por ID
 app.get("/api/infieles/:id", async (req, res) => {
-  const { id } = req.params;
-  const r = await pool.query(`SELECT * FROM infieles WHERE id=$1`, [id]);
+  const r = await pool.query("SELECT * FROM infieles WHERE id = $1", [
+    req.params.id
+  ]);
   res.json(r.rows[0]);
 });
 
-// ==========================
-// API: VOTAR
-// ==========================
-app.post("/api/votar", async (req, res) => {
-  const { id, tipo } = req.body;
 
-  const col =
-    tipo === "verde" ? "v_aprobar" :
-    tipo === "rojo" ? "v_refutar" :
-    tipo === "naranja" ? "v_denunciar" :
-    null;
-
-  if (!col) return res.status(400).json({ error: "Tipo inválido" });
-
-  await pool.query(`UPDATE infieles SET ${col} = ${col} + 1 WHERE id = $1`, [id]);
-
-  res.json({ success: true });
-});
-
-// ==========================
-// API: AGREGAR COMENTARIO
-// ==========================
-app.post("/api/comentario", async (req, res) => {
-  const { id, usuario, comentario, prueba } = req.body;
-
-  await pool.query(
-    `INSERT INTO comentarios (id_reporte, usuario, comentario, prueba)
-     VALUES ($1,$2,$3,$4)`,
-    [id, usuario, comentario, prueba]
-  );
-
-  res.json({ success: true });
-});
-
-// ==========================
-// API: LISTAR COMENTARIOS
-// ==========================
-app.get("/api/comentario/:id", async (req, res) => {
-  const { id } = req.params;
-  const r = await pool.query(
-    `SELECT * FROM comentarios WHERE id_reporte=$1 ORDER BY id DESC`,
-    [id]
-  );
-  res.json(r.rows);
-});
-
-// ==========================
-// SPA fallback
-// ==========================
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-// ==========================
-// INICIO
-// ==========================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("🔥 Servidor listo en puerto", PORT));
+// =============================
+//          START SERVER
+// =============================
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log("Servidor funcionando en puerto", port));
