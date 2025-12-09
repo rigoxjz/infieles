@@ -1,11 +1,7 @@
 services:
   - type: web
-    name: infieles-back
+    name: infieles-registro
     env: node
-    region: oregon
-    plan: free
     buildCommand: "npm install"
     startCommand: "npm start"
-    envVars:
-      - key: DATABASE_URL
-        sync: false
+    plan: free
