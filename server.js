@@ -7,16 +7,17 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: "50mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// Ruta principal
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
-
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: "50mb" }));
 
 // ============================
 // LISTAR TODOS
@@ -43,7 +44,7 @@ app.get("/infieles", async (req, res) => {
       pagination: { page, limit, total: result.rowCount }
     });
   } catch (e) {
-    console.error(e);
+    console.error("Error cargando lista:", e);
     res.status(500).json({ error: "Error cargando lista" });
   }
 });
@@ -65,6 +66,7 @@ app.get("/infieles/:id", async (req, res) => {
     if (q.rows.length === 0) return res.status(404).json({ error: "No encontrado" });
     res.json(q.rows[0]);
   } catch (e) {
+    console.error("Error detalle:", e);
     res.status(500).json({ error: "Error" });
   }
 });
@@ -109,18 +111,19 @@ app.post("/infieles", async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (e) {
-    console.error("ERROR GUARDANDO:", e.message);
+    console.error("ERROR GUARDANDO:", e);
     res.status(500).json({ error: "No se pudo guardar", detalle: e.message });
   }
 });
 
 // ============================
-// VOTAR
+// VOTAR - CORREGIDO
 // ============================
 app.post("/votar/:id", async (req, res) => {
   try {
     const { tipo } = req.body;
     const { id } = req.params;
+    
     if (!["aprobar", "refutar", "denunciar"].includes(tipo)) {
       return res.status(400).json({ error: "Voto inválido" });
     }
@@ -129,23 +132,29 @@ app.post("/votar/:id", async (req, res) => {
       `UPDATE infieles 
        SET votos = jsonb_set(
          COALESCE(votos, '{"aprobar":0,"refutar":0,"denunciar":0}'::jsonb),
-         '{${tipo}}',
-         (COALESCE((votos->>${tipo})::int, 0) + 1)::text::jsonb
+         $1,
+         (COALESCE((votos->>$2)::int, 0) + 1)::text::jsonb
        )
-       WHERE id = $1
+       WHERE id = $3
        RETURNING votos`,
-      [id]
+      [`{${tipo}}`, tipo, id]
     );
 
     if (q.rowCount === 0) return res.status(404).json({ error: "No encontrado" });
     res.json({ ok: true, votos: q.rows[0].votos });
   } catch (e) {
-    res.status(500).json({ error: "Error al votar" });
+    console.error("Error votando:", e);
+    res.status(500).json({ error: "Error al votar", detalle: e.message });
   }
 });
 
-// 404
-app.use("*", (req, res) => res.status(404).json({ error: "Ruta no encontrada" }));
+// Manejo de errores 404 para API
+app.use("/api/*", (req, res) => res.status(404).json({ error: "Ruta no encontrada" }));
+
+// Para cualquier otra ruta, servir el frontend
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`API ON en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Servidor corriendo en puerto ${PORT}`));
