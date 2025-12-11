@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// APP DEBE DEFINIRSE PRIMERO
 const app = express();
 
 // Middleware
@@ -147,9 +148,6 @@ app.post("/votar/:id", async (req, res) => {
     res.status(500).json({ error: "Error al votar", detalle: e.message });
   }
 });
-
-// Manejo de errores 404 para API
-app.use("/api/*", (req, res) => res.status(404).json({ error: "Ruta no encontrada" }));
 
 // Para cualquier otra ruta, servir el frontend
 app.get("*", (req, res) => {
