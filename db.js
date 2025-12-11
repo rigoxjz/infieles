@@ -3,28 +3,34 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const isProduction = process.env.NODE_ENV === "production";
+// DEBUG: Ver qué variables hay
+console.log("=== DEBUG CONEXIÓN BD ===");
+console.log("DATABASE_URL existe:", !!process.env.DATABASE_URL);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("=== FIN DEBUG ===");
 
+// Configuración SIMPLIFICADA - usa solo DATABASE_URL
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  console.error("❌ ERROR CRÍTICO: DATABASE_URL no está definida");
+  console.error("❌ Configura DATABASE_URL en Render");
+  process.exit(1);
+}
+
+// Solo usa DATABASE_URL, ignora las otras variables
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ...(isProduction
-    ? {}
-    : {
-        host: process.env.PGHOST,
-        user: process.env.PGUSER,
-        database: process.env.PGDATABASE,
-        password: process.env.PGPASSWORD,
-        port: process.env.PGPORT || 5432,
-      }),
-  ssl: isProduction
-    ? { rejectUnauthorized: false }
-    : false,
+  connectionString: connectionString,
+  ssl: {
+    rejectUnauthorized: false // NECESARIO para Render
+  }
 });
 
 pool.on("connect", () => {
-  console.log("✅ Conectado a PostgreSQL");
+  console.log("✅ CONEXIÓN EXITOSA a PostgreSQL");
+  console.log("✅ Usando DATABASE_URL:", connectionString.substring(0, 50) + "...");
 });
 
 pool.on("error", (err) => {
-  console.error("❌ Error en la conexión a la base de datos:", err);
+  console.error("❌ Error PostgreSQL:", err.message);
 });
