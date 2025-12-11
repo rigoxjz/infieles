@@ -1,11 +1,7 @@
-// public/script.js - VERSIÓN OPTIMIZADA PARA DOCKER
-// IMPORTANTE: Cambia la URL según tu despliegue
+// public/script.js - VERSIÓN FINAL PARA RENDER
+// BACKEND HOSTEADO EN RENDER → URL FIJA
 
-// OPCIÓN A: Si frontend y backend están juntos (RECOMENDADO para Docker)
-const API = ""; 
-
-// OPCIÓN B: Si están separados en producción
-// const API = "https://tu-dominio.onrender.com";
+const API = "https://infieles-sya9.onrender.com";
 
 // ============== MAYOR DE EDAD ==============
 function confirmAge(ok) {
@@ -19,6 +15,7 @@ function confirmAge(ok) {
         window.location.href = "https://google.com";
     }
 }
+
 if (localStorage.getItem("adult") === "1") {
     document.getElementById("age-modal").classList.remove("active");
     document.getElementById("main-content").style.display = "block";
@@ -83,7 +80,6 @@ async function cargarLista(reset = false) {
     }
 }
 
-// Scroll infinito
 window.addEventListener("scroll", () => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000 && !cargando && hayMasPaginas) {
         cargarLista();
