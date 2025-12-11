@@ -15,81 +15,72 @@ function confirmAge(ok) {
 }
 
 // ======================
-// CARGAR INFIELES
+// CARGAR CHISMES
 // ======================
 async function cargarInfieles() {
     const lista = document.getElementById("lista-infieles");
-    lista.innerHTML = `<p style="text-align:center;padding:20px;">Cargando chismes...</p>`;
+    lista.innerHTML = "<p style='text-align:center; padding:20px;'>Cargando chismes...</p>";
 
-    try {
-        const res = await fetch(`${API}/infieles`);
-        const datos = await res.json();
+    const res = await fetch(`${API}/infieles`);
+    const datos = await res.json();
 
-        lista.innerHTML = ""; // limpiar loading
+    lista.innerHTML = "";
 
-        if (!datos.length) {
-            lista.innerHTML = `<p style="text-align:center;padding:20px;">No hay chismes aún</p>`;
-            return;
-        }
-
-        datos.forEach(item => {
-            const card = document.createElement("div");
-            card.classList.add("card");
-
-            const votoReal = localStorage.getItem(`voto_real_${item.id}`) ? "disabled" : "";
-            const votoFalso = localStorage.getItem(`voto_falso_${item.id}`) ? "disabled" : "";
-
-            card.innerHTML = `
-                <div class="card-header">${item.nombre} ${item.apellido}</div>
-                <div class="card-body">
-                    <p class="info"><strong>Edad:</strong> ${item.edad}</p>
-                    <p class="info"><strong>Ubicación:</strong> ${item.ubicacion}</p>
-                    <p class="info"><strong>Historia:</strong> ${item.historia.substring(0,90)}...</p>
-                    <button class="btn btn-azul btn-ver">Ver chisme completo</button>
-                </div>
-            `;
-
-            card.querySelector(".btn-ver").onclick = e => {
-                e.stopPropagation();
-                mostrarDetalle(item);
-            };
-
-            lista.appendChild(card);
-        });
-    } catch (err) {
-        lista.innerHTML = `<p style="text-align:center;padding:20px;color:red;">Error al cargar chismes</p>`;
-        console.error(err);
+    if (datos.length === 0) {
+        lista.innerHTML = "<p style='text-align:center; padding:20px;'>No hay chismes aún</p>";
+        return;
     }
+
+    datos.forEach(item => {
+        const card = document.createElement("div");
+        card.classList.add("card");
+
+        card.innerHTML = `
+            <div class="card-header">${item.nombre} ${item.apellido}</div>
+            <div class="card-body">
+                <p class="info"><strong>Edad:</strong> ${item.edad}</p>
+                <p class="info"><strong>Ubicación:</strong> ${item.ubicacion}</p>
+                <p class="info"><strong>Publicado por:</strong> ${item.reportero}</p>
+                <p class="info"><strong>Historia:</strong> ${item.historia.substring(0, 90)}... <button onclick="mostrarDetallePorId(${item.id})">Ver chisme completo</button></p>
+                <div class="votos">
+                    <button class="voto-btn" style="background:green" onclick="votar(${item.id}, true)">Es real (${item.votos_reales || 0})</button>
+                    <button class="voto-btn" style="background:red" onclick="votar(${item.id}, false)">Es falso (${item.votos_falsos || 0})</button>
+                </div>
+                <div class="comentarios" id="comentarios-${item.id}">
+                    ${item.comentarios.map(c => `
+                        <div class="comentario">
+                            <strong>${c.propietario ? "Propietario" : c.nombre}:</strong> ${c.texto}
+                            ${c.fotos ? c.fotos.map(f => `<img src="data:image/jpeg;base64,${f}">`).join("") : ""}
+                        </div>
+                    `).join("")}
+                </div>
+                <div style="margin-top:10px">
+                    <input type="text" placeholder="Tu nombre (opcional)" id="coment-nombre-${item.id}" style="width:48%; margin-right:4%">
+                    <input type="text" placeholder="Comentario" id="coment-texto-${item.id}" style="width:48%">
+                    <input type="file" id="coment-fotos-${item.id}" multiple style="margin-top:5px">
+                    <button class="btn btn-azul" style="margin-top:5px" onclick="agregarComentario(${item.id})">Comentar</button>
+                </div>
+            </div>
+        `;
+        lista.appendChild(card);
+    });
 }
 
 // ======================
-// MOSTRAR DETALLE
+// MOSTRAR DETALLE COMPLETO
 // ======================
-function mostrarDetalle(item) {
+async function mostrarDetallePorId(id) {
+    const res = await fetch(`${API}/infieles`);
+    const datos = await res.json();
+    const item = datos.find(x => x.id === id);
+
     const modal = document.getElementById("modal-chisme");
     modal.classList.add("active");
 
-    // Fotos chisme
     let fotosHTML = "";
     if (item.fotos && item.fotos.length > 0) {
         item.fotos.forEach(f => {
-            fotosHTML += `<img src="data:image/jpeg;base64,${f}" style="max-width:100%;height:auto;margin:10px 0;">`;
-        });
-    }
-
-    // Comentarios
-    let comentariosHTML = "";
-    if (item.comentarios && item.comentarios.length > 0) {
-        item.comentarios.forEach(c => {
-            let fotosC = "";
-            if (c.fotos) c.fotos.forEach(f => fotosC += `<img src="data:image/jpeg;base64,${f}">`);
-            comentariosHTML += `
-                <div class="comentario">
-                    <strong>${c.nombre}</strong> ${c.propietario ? "(Propietario)" : ""}:
-                    <p>${c.texto}</p>
-                    <div>${fotosC}</div>
-                </div>
-            `;
+            fotosHTML += `<img src="data:image/jpeg;base64,${f}">`;
         });
     }
 
@@ -97,84 +88,14 @@ function mostrarDetalle(item) {
         <h2>${item.nombre} ${item.apellido}</h2>
         <p><strong>Edad:</strong> ${item.edad}</p>
         <p><strong>Ubicación:</strong> ${item.ubicacion}</p>
+        <p><strong>Publicado por:</strong> ${item.reportero}</p>
         <p>${item.historia}</p>
         <div>${fotosHTML}</div>
-        <div class="votos">
-            <button class="voto-btn" style="background:green;" onclick="votar(${item.id}, true)" ${localStorage.getItem(`voto_real_${item.id}`) ? "disabled" : ""}>Es real</button>
-            <button class="voto-btn" style="background:red;" onclick="votar(${item.id}, false)" ${localStorage.getItem(`voto_falso_${item.id}`) ? "disabled" : ""}>Es falso</button>
-        </div>
-        <div class="comentarios">
-            ${comentariosHTML}
-            <h3>Agregar comentario</h3>
-            <input type="text" id="coment-nombre" placeholder="Nombre (opcional)">
-            <textarea id="coment-texto" placeholder="Tu comentario"></textarea>
-            <input type="file" id="coment-fotos" accept="image/*" multiple>
-            <button class="btn btn-azul" onclick="agregarComentario(${item.id})">Comentar</button>
-        </div>
     `;
 }
 
 function cerrarDetalle() {
     document.getElementById("modal-chisme").classList.remove("active");
-}
-
-// ======================
-// VOTAR
-// ======================
-async function votar(id, real) {
-    try {
-        // Aquí puedes agregar endpoint para guardar voto en DB si quieres
-        if (real) localStorage.setItem(`voto_real_${id}`, true);
-        else localStorage.setItem(`voto_falso_${id}`, true);
-        alert("Gracias por tu voto");
-    } catch (err) {
-        console.error(err);
-        alert("Error al votar");
-    }
-}
-
-// ======================
-// AGREGAR COMENTARIO
-// ======================
-async function agregarComentario(id) {
-    const nombre = document.getElementById("coment-nombre").value || "Anónimo";
-    const texto = document.getElementById("coment-texto").value;
-    const archivos = document.getElementById("coment-fotos").files;
-
-    if (!texto) return alert("Escribe un comentario");
-
-    const fotos = [];
-    for (let a of archivos) {
-        const base64 = await fileToBase64(a);
-        fotos.push(base64);
-    }
-
-    // Aquí puedes guardar comentario en DB, por ahora lo agregamos solo visual
-    const divComentarios = document.querySelector(".comentarios");
-    let fotosHTML = "";
-    fotos.forEach(f => fotosHTML += `<img src="data:image/jpeg;base64,${f}">`);
-    divComentarios.innerHTML += `
-        <div class="comentario">
-            <strong>${nombre}</strong>: <p>${texto}</p>
-            <div>${fotosHTML}</div>
-        </div>
-    `;
-
-    document.getElementById("coment-nombre").value = "";
-    document.getElementById("coment-texto").value = "";
-    document.getElementById("coment-fotos").value = "";
-}
-
-// ======================
-// UTILS
-// ======================
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result.split(",")[1]);
-        reader.onerror = error => reject(error);
-    });
 }
 
 // ======================
@@ -212,6 +133,55 @@ document.getElementById("form-infiel").onsubmit = async e => {
         alert("Error al publicar");
     }
 };
+
+// ======================
+// VOTAR
+// ======================
+async function votar(id, real) {
+    const usuario = prompt("Escribe tu nombre o nick para votar:") || "Anónimo";
+    try {
+        await fetch(`${API}/votar`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ infiel_id: id, usuario, voto: real })
+        });
+        cargarInfieles();
+    } catch (err) {
+        console.error(err);
+        alert("Error al votar");
+    }
+}
+
+// ======================
+// COMENTARIOS
+// ======================
+async function agregarComentario(id) {
+    const nombre = document.getElementById(`coment-nombre-${id}`).value || "Anónimo";
+    const texto = document.getElementById(`coment-texto-${id}`).value;
+    const archivos = document.getElementById(`coment-fotos-${id}`).files;
+
+    if (!texto) return alert("Escribe un comentario");
+
+    const fd = new FormData();
+    fd.append("infiel_id", id);
+    fd.append("nombre", nombre);
+    fd.append("texto", texto);
+    fd.append("propietario", false);
+
+    for (let a of archivos) fd.append("fotos", a);
+
+    const res = await fetch(`${API}/comentario`, { method: "POST", body: fd });
+    const data = await res.json();
+
+    if (data.success) {
+        document.getElementById(`coment-nombre-${id}`).value = "";
+        document.getElementById(`coment-texto-${id}`).value = "";
+        document.getElementById(`coment-fotos-${id}`).value = "";
+        cargarInfieles();
+    } else {
+        alert("Error al comentar");
+    }
+}
 
 // ======================
 // FILTRO DE BÚSQUEDA
