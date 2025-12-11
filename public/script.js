@@ -3,8 +3,6 @@
 
 const API = "https://infieles-sya9.onrender.com";
 
-// script.js - Versión con PostgreSQL
-
 let infielesData = [];
 let currentChismeId = null;
 
@@ -64,7 +62,6 @@ function cerrarLegal() {
 
 // ========== FUNCIONES CON API ==========
 
-// Cargar infieles desde PostgreSQL
 async function cargarInfieles() {
     try {
         showLoading(true);
@@ -81,7 +78,6 @@ async function cargarInfieles() {
     }
 }
 
-// Guardar infiel en PostgreSQL
 async function guardarInfiel(e) {
     e.preventDefault();
     
@@ -93,7 +89,6 @@ async function guardarInfiel(e) {
     formData.append('ubicacion', document.getElementById('ubicacion').value);
     formData.append('historia', document.getElementById('historia').value);
     
-    // Agregar imágenes
     const files = document.getElementById('pruebas').files;
     for (let i = 0; i < files.length; i++) {
         formData.append('pruebas', files[i]);
@@ -106,7 +101,10 @@ async function guardarInfiel(e) {
             body: formData
         });
         
-        if (!response.ok) throw new Error('Error al guardar');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al guardar');
+        }
         
         const nuevoInfiel = await response.json();
         infielesData.unshift(nuevoInfiel);
@@ -115,13 +113,12 @@ async function guardarInfiel(e) {
         alert('✅ ¡Chisme publicado en la base de datos!');
     } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error al publicar. Intenta de nuevo.');
+        alert(`❌ Error: ${error.message}`);
     } finally {
         showLoading(false);
     }
 }
 
-// Mostrar lista de infieles
 function mostrarInfieles(data) {
     const lista = document.getElementById('lista-infieles');
     lista.innerHTML = '';
@@ -160,7 +157,7 @@ function mostrarInfieles(data) {
                     </div>
                 </div>
                 <div style="font-size:0.8em; color:#999; margin-top:10px;">
-                    ${new Date(infiel.fecha).toLocaleDateString('es-ES')}
+                    ${formatFecha(infiel.fecha)}
                 </div>
             </div>
         `;
@@ -168,7 +165,6 @@ function mostrarInfieles(data) {
     });
 }
 
-// Filtrar búsqueda
 async function filtrar() {
     const searchTerm = document.getElementById('search-input').value;
     
@@ -186,7 +182,6 @@ async function filtrar() {
     }
 }
 
-// Mostrar detalle completo desde PostgreSQL
 async function mostrarDetalle(id) {
     try {
         showLoading(true);
@@ -204,7 +199,6 @@ async function mostrarDetalle(id) {
     }
 }
 
-// Mostrar modal con detalles
 function mostrarModalDetalle(infiel) {
     const detalle = document.getElementById('detalle-chisme');
     
@@ -212,7 +206,12 @@ function mostrarModalDetalle(infiel) {
     if (infiel.pruebas && infiel.pruebas.length > 0) {
         imagenesHTML = '<div class="galeria"><h3>Pruebas:</h3>';
         infiel.pruebas.forEach(prueba => {
-            imagenesHTML += `<img src="${API_URL.replace('/api', '')}${prueba.imagen_url}" alt="Prueba">`;
+            // Verificar si es base64 o URL
+            if (prueba.imagen_url.startsWith('data:')) {
+                imagenesHTML += `<img src="${prueba.imagen_url}" alt="Prueba">`;
+            } else {
+                imagenesHTML += `<img src="${prueba.imagen_url}" alt="Prueba">`;
+            }
         });
         imagenesHTML += '</div>';
     }
@@ -225,7 +224,7 @@ function mostrarModalDetalle(infiel) {
                 <div class="comentario">
                     <strong>${comentario.autor}:</strong>
                     <p>${comentario.texto}</p>
-                    <small>${new Date(comentario.fecha).toLocaleString('es-ES')}</small>
+                    <small>${formatFecha(comentario.fecha)}</small>
                 </div>
             `;
         });
@@ -237,7 +236,7 @@ function mostrarModalDetalle(infiel) {
         <div class="info"><strong>Edad:</strong> ${infiel.edad} años</div>
         <div class="info"><strong>Ubicación:</strong> ${infiel.ubicacion}</div>
         <div class="info"><strong>Reportado por:</strong> ${infiel.reportero}</div>
-        <div class="info"><strong>Fecha:</strong> ${new Date(infiel.fecha).toLocaleString('es-ES')}</div>
+        <div class="info"><strong>Fecha:</strong> ${formatFecha(infiel.fecha)}</div>
         
         <div style="margin:20px 0; padding:15px; background:#f8f9fa; border-radius:10px;">
             <h3>La Historia:</h3>
@@ -268,7 +267,6 @@ function mostrarModalDetalle(infiel) {
     document.getElementById('modal-chisme').classList.add('active');
 }
 
-// Votar en PostgreSQL
 async function votar(tipo) {
     if (!currentChismeId) return;
     
@@ -283,8 +281,7 @@ async function votar(tipo) {
         
         if (!response.ok) throw new Error('Error al votar');
         
-        const data = await response.json();
-        // Actualizar el modal mostrando los nuevos votos
+        // Recargar el detalle
         mostrarDetalle(currentChismeId);
     } catch (error) {
         console.error('Error:', error);
@@ -292,7 +289,6 @@ async function votar(tipo) {
     }
 }
 
-// Agregar comentario en PostgreSQL
 async function agregarComentario() {
     if (!currentChismeId) return;
     
@@ -315,7 +311,7 @@ async function agregarComentario() {
         
         if (!response.ok) throw new Error('Error al comentar');
         
-        // Recargar el detalle para mostrar el nuevo comentario
+        // Recargar el detalle
         mostrarDetalle(currentChismeId);
         
         // Limpiar campos
@@ -375,4 +371,15 @@ function mostrarError(mensaje) {
             </button>
         </div>
     `;
+}
+
+function formatFecha(fechaString) {
+    const fecha = new Date(fechaString);
+    return fecha.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
