@@ -1,4 +1,20 @@
-FROM php:8.3-apache
-COPY public/ /var/www/html/
-RUN a2enmod rewrite
-EXPOSE 80
+# Usa Node.js 18 (más estable)
+FROM node:18-alpine
+
+# Crea directorio de trabajo
+WORKDIR /app
+
+# Copia archivos de dependencias
+COPY package*.json ./
+
+# Instala solo dependencias de producción
+RUN npm ci --only=production
+
+# Copia todo el código
+COPY . .
+
+# Expone el puerto que usa Express
+EXPOSE 3000
+
+# Comando para iniciar
+CMD ["node", "server.js"]
