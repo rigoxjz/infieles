@@ -1,20 +1,14 @@
-# Usa Node.js 18 (más estable)
 FROM node:18-alpine
 
-# Crea directorio de trabajo
 WORKDIR /app
 
-# Copia archivos de dependencias
-COPY package*.json ./
+COPY package.json ./
 
-# Instala solo dependencias de producción
-RUN npm ci --only=production
+# Usa npm install en lugar de npm ci
+RUN npm install --production --no-audit --no-fund
 
-# Copia todo el código
 COPY . .
 
-# Expone el puerto que usa Express
 EXPOSE 3000
 
-# Comando para iniciar
 CMD ["node", "server.js"]
