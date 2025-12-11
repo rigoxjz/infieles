@@ -1,12 +1,6 @@
 services:
   - type: web
-    name: infieles-frontend
-    env: docker
-    plan: free
-    healthCheckPath: /
-
-  - type: web
-    name: infieles-api
+    name: infieles
     env: node
     buildCommand: npm install
     startCommand: node server.js
