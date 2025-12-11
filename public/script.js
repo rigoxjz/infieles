@@ -1,7 +1,8 @@
 // public/script.js - VERSIÓN FINAL 100% FUNCIONAL (2025)
 // COPIA Y PEGA TODO ESTE ARCHIVO
 
-const API = ""; // ← Funciona porque frontend y backend están en el mismo dominio
+//const API = ""; // ← Funciona porque frontend y backend están en el mismo dominio
+const API = "https://infieles-api.onrender.com";  // ← Nueva URL del backend
 
 // ============== MAYOR DE EDAD ==============
 function confirmAge(ok) {
