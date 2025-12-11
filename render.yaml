@@ -4,9 +4,11 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     envVars:
-      - key: DATABASE_URL
-        value: postgresql://infieles:cQ1eK3awcS9J8l6pgLm0P20VbLZikt5W@dpg-d4rm7umuk2gs73eauuug-a:5432/dbinfieles
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
+      - key: DATABASE_URL  # ← IMPORTANTE: Así se conecta con la DB
+        fromDatabase:
+          name: dbinfieles  # Nombre de tu DB en Render
+          property: connectionString
