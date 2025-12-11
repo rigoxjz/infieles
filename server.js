@@ -1,168 +1,106 @@
+// server.js
 import express from "express";
 import cors from "cors";
-import { pool } from "./db.js";
-import path from "path";
-import { fileURLToPath } from "url";
+import pool from "./db.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ===========================
-// INICIALIZAR APP (ANTES DE USARLA)
-// ===========================
 const app = express();
+app.use(express.json({ limit: "25mb" }));
+app.use(cors({
+    origin: process.env.ALLOWED_ORIGIN,
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"]
+}));
 
-// Middlewares
-app.use(cors());
-app.use(express.json({ limit: "50mb" }));
-app.use(express.static(path.join(__dirname, "public")));
-
-// Página principal
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-// ============================
-// LISTAR TODOS
-// ============================
+// ================= LISTA PAGINADA =================
 app.get("/infieles", async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-    const offset = (page - 1) * limit;
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+        const offset = (page - 1) * limit;
 
-    const result = await pool.query(
-      `SELECT *, 
-              (votos->>'aprobar')::int AS aprobar,
-              (votos->>'refutar')::int AS refutar,
-              (votos->>'denunciar')::int AS denunciar
-       FROM infieles 
-       ORDER BY id DESC 
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
+        const q = `SELECT * FROM infieles ORDER BY creado_en DESC LIMIT $1 OFFSET $2`;
+        const result = await pool.query(q, [limit, offset]);
 
-    res.json({
-      data: result.rows,
-      pagination: { page, limit, total: result.rowCount }
-    });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: "Error cargando lista" });
-  }
+        res.json({ data: result.rows });
+    } catch (err) {
+        res.status(500).send("Error servidor");
+    }
 });
 
-// ============================
-// DETALLE
-// ============================
+// ================= DETALLE =================
 app.get("/infieles/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const q = await pool.query(
-      `SELECT *, 
-              (votos->>'aprobar')::int AS aprobar,
-              (votos->>'refutar')::int AS refutar,
-              (votos->>'denunciar')::int AS denunciar
-       FROM infieles WHERE id = $1`,
-      [id]
-    );
+    try {
+        const id = req.params.id;
+        const q = `SELECT * FROM infieles WHERE id = $1`;
+        const result = await pool.query(q, [id]);
 
-    if (q.rows.length === 0)
-      return res.status(404).json({ error: "No encontrado" });
+        if (result.rows.length === 0) return res.status(404).send("No encontrado");
 
-    res.json(q.rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: "Error" });
-  }
+        res.json(result.rows[0]);
+    } catch {
+        res.status(500).send("Error servidor");
+    }
 });
 
-// ============================
-// CREAR CHISME
-// ============================
+// ================= PUBLICAR =================
 app.post("/infieles", async (req, res) => {
-  try {
-    const {
-      reportero = "Anónimo",
-      nombre,
-      apellido,
-      edad,
-      ubicacion,
-      historia,
-      imagenes = []
-    } = req.body;
+    try {
+        const {
+            reportero,
+            nombre,
+            apellido,
+            edad,
+            ubicacion,
+            historia,
+            imagenes
+        } = req.body;
 
-    if (!nombre || !ubicacion || !historia) {
-      return res.status(400).json({ error: "Faltan datos obligatorios" });
+        const q = `
+            INSERT INTO infieles (reportero,nombre,apellido,edad,ubicacion,historia,imagenes)
+            VALUES ($1,$2,$3,$4,$5,$6,$7)
+            RETURNING *
+        `;
+
+        const r = await pool.query(q, [
+            reportero,
+            nombre,
+            apellido,
+            edad,
+            ubicacion,
+            historia,
+            imagenes
+        ]);
+
+        res.json(r.rows[0]);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send("Error al publicar");
     }
-
-    const clean = (s) => (typeof s === "string" ? s.trim().slice(0, 5000) : "");
-
-    const result = await pool.query(
-      `INSERT INTO infieles 
-       (reportero, nombre, apellido, edad, ubicacion, historia, imagenes, votos)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        clean(reportero),
-        clean(nombre),
-        clean(apellido) || null,
-        edad ? parseInt(edad) : null,
-        clean(ubicacion),
-        clean(historia),
-        imagenes,
-        { aprobar: 0, refutar: 0, denunciar: 0 }
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (e) {
-    console.error("ERROR GUARDANDO:", e.message);
-    res.status(500).json({ error: "No se pudo guardar", detalle: e.message });
-  }
 });
 
-// ============================
-// VOTAR
-// ============================
+// ================= VOTAR =================
 app.post("/votar/:id", async (req, res) => {
-  try {
-    const { tipo } = req.body;
-    const { id } = req.params;
+    try {
+        const tipo = req.body.tipo;
+        const id = req.params.id;
 
-    if (!["aprobar", "refutar", "denunciar"].includes(tipo)) {
-      return res.status(400).json({ error: "Voto inválido" });
+        if (!["aprobar", "refutar", "denunciar"].includes(tipo))
+            return res.status(400).send("Tipo inválido");
+
+        const q = `
+            UPDATE infieles 
+            SET ${tipo} = ${tipo} + 1
+            WHERE id = $1
+            RETURNING *
+        `;
+
+        const r = await pool.query(q, [id]);
+        res.json(r.rows[0]);
+    } catch {
+        res.status(500).send("Error al votar");
     }
-
-    const q = await pool.query(
-      `UPDATE infieles 
-       SET votos = jsonb_set(
-         COALESCE(votos, '{"aprobar":0,"refutar":0,"denunciar":0}'::jsonb),
-         '{${tipo}}',
-         (COALESCE((votos->>${tipo})::int, 0) + 1)::text::jsonb
-       )
-       WHERE id = $1
-       RETURNING votos`,
-      [id]
-    );
-
-    if (q.rowCount === 0)
-      return res.status(404).json({ error: "No encontrado" });
-
-    res.json({ ok: true, votos: q.rows[0].votos });
-  } catch (e) {
-    res.status(500).json({ error: "Error al votar" });
-  }
 });
 
-// ============================
-// 404
-// ============================
-app.use("*", (req, res) =>
-  res.status(404).json({ error: "Ruta no encontrada" })
-);
-
-// ============================
-// INICIAR SERVER
-// ============================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`API ON en puerto ${PORT}`));
+// ================= INICIAR SERVIDOR =================
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log("API lista en puerto " + PORT));
