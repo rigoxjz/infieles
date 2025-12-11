@@ -1,15 +1,11 @@
-// public/script.js - VERSIÓN FINAL CORREGIDA 100% FUNCIONAL
+// public/script.js - VERSIÓN OPTIMIZADA PARA DOCKER
+// IMPORTANTE: Cambia la URL según tu despliegue
 
-// CONFIGURACIÓN API - ELIGE UNA OPCIÓN:
+// OPCIÓN A: Si frontend y backend están juntos (RECOMENDADO para Docker)
+const API = ""; 
 
-// OPCIÓN 1: Para producción en Render/Railway (mismo dominio)
-// const API = ""; 
-
-// OPCIÓN 2: Para desarrollo local
-// const API = "http://localhost:3000";
-
-// OPCIÓN 3: Si tu frontend y backend están separados
-const API = "https://infieles-sya9.onrender.com";
+// OPCIÓN B: Si están separados en producción
+// const API = "https://tu-dominio.onrender.com";
 
 // ============== MAYOR DE EDAD ==============
 function confirmAge(ok) {
@@ -23,8 +19,6 @@ function confirmAge(ok) {
         window.location.href = "https://google.com";
     }
 }
-
-// Verificar si ya es mayor de edad
 if (localStorage.getItem("adult") === "1") {
     document.getElementById("age-modal").classList.remove("active");
     document.getElementById("main-content").style.display = "block";
@@ -34,7 +28,6 @@ if (localStorage.getItem("adult") === "1") {
 let pagina = 1;
 let cargando = false;
 let hayMasPaginas = true;
-let primeraCarga = true;
 
 async function cargarLista(reset = false) {
     if (cargando || !hayMasPaginas) return;
@@ -49,20 +42,16 @@ async function cargarLista(reset = false) {
     try {
         const res = await fetch(`${API}/infieles?page=${pagina}&limit=20`);
         
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
+        if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const json = await res.json();
         const lista = json.data || [];
 
         const cont = document.getElementById("lista-infieles");
 
-        if (lista.length === 0) {
+        if (lista.length === 0 && pagina === 1) {
+            cont.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">No hay chismes todavía</p>';
             hayMasPaginas = false;
-            if (pagina === 1) {
-                cont.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">No hay chismes todavía. ¡Sé el primero en publicar!</p>';
-            }
         } else {
             lista.forEach(i => {
                 const fecha = new Date(i.creado_en).toLocaleDateString("es");
@@ -82,21 +71,12 @@ async function cargarLista(reset = false) {
                 </div>`;
             });
             
-            if (lista.length < 20) {
-                hayMasPaginas = false;
-            }
+            if (lista.length < 20) hayMasPaginas = false;
         }
 
         pagina++;
     } catch (err) {
         console.error("Error cargando lista:", err);
-        const cont = document.getElementById("lista-infieles");
-        if (pagina === 1) {
-            cont.innerHTML = `<p style="text-align:center;color:#dc3545;padding:20px;">
-                Error cargando chismes: ${err.message}<br>
-                <small>Verifica tu conexión o intenta más tarde</small>
-            </p>`;
-        }
         hayMasPaginas = false;
     } finally {
         cargando = false;
@@ -110,20 +90,13 @@ window.addEventListener("scroll", () => {
     }
 });
 
-// Cargar primera página
-if (localStorage.getItem("adult") === "1" && primeraCarga) {
-    primeraCarga = false;
-    cargarLista();
-}
+if (localStorage.getItem("adult") === "1") cargarLista();
 
 // ============== VER DETALLE ==============
 async function verChisme(id) {
     try {
-        const res = await fetch(`${API}/infieles/${id}`);
-        
-        if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-        }
+        const res = await fetch(API + "/infieles/" + id);
+        if (!res.ok) throw new Error(`Error ${res.status}`);
         
         const i = await res.json();
 
@@ -132,65 +105,41 @@ async function verChisme(id) {
         const pR = Math.round((i.refutar || 0) / total * 100);
 
         const galeria = i.imagenes?.length
-            ? i.imagenes.map(src => `<img src="${src}" onclick="ampliarImagen(this)" ondblclick="reducirImagen(this)">`).join("")
+            ? i.imagenes.map(src => `<img src="${src}" onclick="this.style.transform='scale(2.5)';this.style.zIndex='9999'" ondblclick="this.style.transform='';this.style.zIndex=''">`).join("")
             : `<p style="color:#888">Sin pruebas</p>`;
 
         document.getElementById("detalle-chisme").innerHTML = `
-            <div class="detalle-contenido">
-                <h2>${i.nombre} ${i.apellido || ''} <small>(${i.edad || '??'} años)</small></h2>
-                <p><strong>Reportado por:</strong> ${i.reportero || 'Anónimo'}</p>
-                <p><strong>Ubicación:</strong> ${i.ubicacion}</p>
-                <p><small>${new Date(i.creado_en).toLocaleString("es")}</small></p>
-                <hr>
-                <p class="historia">${(i.historia || '').replace(/\n/g, '<br>')}</p>
-                <h3>Pruebas</h3>
-                <div class="galeria">${galeria}</div>
-                <h3>Votación (${total} votos)</h3>
-                <div class="votos">
-                    <button class="voto-btn" style="background:#28a745" onclick="votar('${id}','aprobar')">${pA}% Aprobar</button>
-                    <button class="voto-btn" style="background:#dc3545" onclick="votar('${id}','refutar')">${pR}% Refutar</button>
-                </div>
+            <h2>${i.nombre} ${i.apellido || ''} <small>(${i.edad || '??'} años)</small></h2>
+            <p><strong>Reportado por:</strong> ${i.reportero || 'Anónimo'}</p>
+            <p><strong>Ubicación:</strong> ${i.ubicacion}</p>
+            <p><small>${new Date(i.creado_en).toLocaleString("es")}</small></p>
+            <hr>
+            <p>${(i.historia || '').replace(/\n/g, '<br>')}</p>
+            <h3>Pruebas</h3>
+            <div class="galeria">${galeria}</div>
+            <h3>Votación (${total} votos)</h3>
+            <div class="votos">
+                <button class="voto-btn" style="background:#28a745" onclick="votar('${id}','aprobar')">${pA}% Aprobar</button>
+                <button class="voto-btn" style="background:#dc3545" onclick="votar('${id}','refutar')">${pR}% Refutar</button>
             </div>
         `;
         document.getElementById("modal-chisme").classList.add("active");
     } catch (err) {
         console.error("Error al cargar detalle:", err);
-        alert("Error al cargar el chisme. Intenta de nuevo.");
+        alert("Error al cargar el chisme");
     }
-}
-
-// Funciones para manejar imágenes
-function ampliarImagen(img) {
-    img.style.transform = 'scale(2.5)';
-    img.style.zIndex = '9999';
-    img.style.position = 'relative';
-}
-
-function reducirImagen(img) {
-    img.style.transform = '';
-    img.style.zIndex = '';
-    img.style.position = '';
 }
 
 async function votar(id, tipo) {
     try {
-        const res = await fetch(`${API}/votar/${id}`, {
+        await fetch(API + "/votar/" + id, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ tipo })
         });
-        
-        if (!res.ok) {
-            throw new Error(`Error ${res.status}`);
-        }
-        
-        const data = await res.json();
-        if (data.ok) {
-            verChisme(id); // Recargar detalle
-        }
+        verChisme(id);
     } catch (err) {
-        console.error("Error votando:", err);
-        alert("Error al votar. Intenta de nuevo.");
+        alert("Error al votar");
     }
 }
 
@@ -199,37 +148,21 @@ document.getElementById("form-infiel").addEventListener("submit", async e => {
     e.preventDefault();
 
     const form = e.target;
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
+    const btn = form.querySelector('button[type="submit"]');
+    const btnText = btn.textContent;
     
-    // Deshabilitar botón durante el envío
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Publicando...";
+    btn.disabled = true;
+    btn.textContent = "Publicando...";
 
     const files = form.pruebas.files;
     let imagenes = [];
 
     try {
-        // Convertir imágenes a base64
         for (const f of files) {
-            if (f.size > 5 * 1024 * 1024) { // 5MB límite
-                alert(`La imagen ${f.name} es demasiado grande (máximo 5MB)`);
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
-                return;
-            }
             imagenes.push(await fileToBase64(f));
         }
 
-        // Validar campos obligatorios
-        if (!form.nombre.value.trim() || !form.ubicacion.value.trim() || !form.historia.value.trim()) {
-            alert("Nombre, ubicación e historia son obligatorios");
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-            return;
-        }
-
-        const response = await fetch(`${API}/infieles`, {
+        const response = await fetch(API + "/infieles", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -243,24 +176,22 @@ document.getElementById("form-infiel").addEventListener("submit", async e => {
             })
         });
 
-        const responseData = await response.json();
-
         if (!response.ok) {
-            throw new Error(responseData.error || `Error ${response.status}: ${response.statusText}`);
+            const err = await response.text();
+            throw new Error(err || "Error del servidor");
         }
 
-        alert("¡CHISME PUBLICADO EXITOSAMENTE!");
+        alert("¡CHISME PUBLICADO!");
         cerrarModal();
         form.reset();
-        cargarLista(true); // Recargar lista desde el inicio
+        cargarLista(true);
 
     } catch (err) {
-        console.error("Error publicando chisme:", err);
-        alert("Error al publicar: " + (err.message || "Error desconocido"));
+        console.error("Error:", err);
+        alert("Error al publicar: " + err.message);
     } finally {
-        // Restaurar botón
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
+        btn.disabled = false;
+        btn.textContent = btnText;
     }
 });
 
@@ -268,7 +199,7 @@ function fileToBase64(file) {
     return new Promise((res, rej) => {
         const reader = new FileReader();
         reader.onload = () => res(reader.result);
-        reader.onerror = (err) => rej(err);
+        reader.onerror = rej;
         reader.readAsDataURL(file);
     });
 }
@@ -286,21 +217,3 @@ function cerrarDetalle() {
 function cerrarLegal() {
     document.getElementById("modal-legal").classList.remove("active");
 }
-
-// Cerrar modales con Escape
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        cerrarModal();
-        cerrarDetalle();
-        cerrarLegal();
-    }
-});
-
-// Cerrar modales haciendo clic fuera
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-        }
-    });
-});
