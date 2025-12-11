@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: infieles
+    name: infieles-api
     env: node
     buildCommand: npm install
     startCommand: node server.js
