@@ -11,36 +11,48 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
 
-// Configurar PostgreSQL con tu conexión de Render
+// Servir archivos estáticos desde la carpeta 'public'
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Configuración
+const isProduction = process.env.NODE_ENV === 'production';
+const port = process.env.PORT || 3000;
+
+// Configurar PostgreSQL
+const databaseUrl = process.env.DATABASE_URL || 
+    'postgresql://infieles:cQ1eK3awcS9J8l6pgLm0P20VbLZikt5W@dpg-d4rm7umuk2gs73eauuug-a.virginia-postgres.render.com/dbinfieles';
+
 const pool = new Pool({
-    connectionString: 'postgresql://infieles:cQ1eK3awcS9J8l6pgLm0P20VbLZikt5W@dpg-d4rm7umuk2gs73eauuug-a.virginia-postgres.render.com/dbinfieles',
-    ssl: {
-        rejectUnauthorized: false
-    }
+    connectionString: databaseUrl,
+    ssl: { rejectUnauthorized: false }
 });
 
-// Configurar Multer para subir imágenes
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = 'uploads/';
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
+// Configurar Multer
+let storage;
+if (isProduction) {
+    storage = multer.memoryStorage();
+} else {
+    storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            const uploadDir = 'uploads/';
+            if (!fs.existsSync(uploadDir)) {
+                fs.mkdirSync(uploadDir, { recursive: true });
+            }
+            cb(null, uploadDir);
+        },
+        filename: (req, file, cb) => {
+            const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
+            cb(null, uniqueName);
         }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
-        cb(null, uniqueName);
-    }
-});
+    });
+}
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB límite
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif/;
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
         
@@ -52,17 +64,23 @@ const upload = multer({
     }
 });
 
-// Verificar conexión a la base de datos
-pool.connect((err, client, release) => {
-    if (err) {
-        console.error('Error conectando a PostgreSQL:', err);
-    } else {
-        console.log('✅ Conectado a PostgreSQL en Render');
-        release();
+// Servir uploads solo en desarrollo
+if (!isProduction) {
+    app.use('/uploads', express.static('uploads'));
+}
+
+// Middleware para errores de multer
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'El archivo es demasiado grande (máximo 5MB)' });
+        }
+        return res.status(400).json({ error: error.message });
     }
+    next(error);
 });
 
-// ========== RUTAS ==========
+// ========== RUTAS API ==========
 
 // 1. Obtener todos los infieles
 app.get('/api/infieles', async (req, res) => {
@@ -95,7 +113,7 @@ app.post('/api/infieles', upload.array('pruebas', 10), async (req, res) => {
         const { reportero, nombre, apellido, edad, ubicacion, historia } = req.body;
         const files = req.files || [];
 
-        // Validaciones básicas
+        // Validaciones
         if (!nombre || !apellido || !edad || !ubicacion || !historia) {
             return res.status(400).json({ error: 'Faltan campos requeridos' });
         }
@@ -110,10 +128,17 @@ app.post('/api/infieles', upload.array('pruebas', 10), async (req, res) => {
 
         const infielId = infielResult.rows[0].id;
 
-        // Guardar imágenes si hay
+        // Guardar imágenes
         if (files.length > 0) {
             for (const file of files) {
-                const imageUrl = `/uploads/${file.filename}`;
+                let imageUrl;
+                if (isProduction) {
+                    // En producción, guardar en base64 o usar servicio externo
+                    imageUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+                } else {
+                    imageUrl = `/uploads/${file.filename}`;
+                }
+                
                 await pool.query(
                     'INSERT INTO pruebas (infiel_id, imagen_url) VALUES ($1, $2)',
                     [infielId, imageUrl]
@@ -121,7 +146,7 @@ app.post('/api/infieles', upload.array('pruebas', 10), async (req, res) => {
             }
         }
 
-        // Obtener el infiel completo con conteos
+        // Obtener infiel completo
         const finalResult = await pool.query(`
             SELECT i.*, 
                    COUNT(DISTINCT p.id) as total_pruebas,
@@ -140,7 +165,7 @@ app.post('/api/infieles', upload.array('pruebas', 10), async (req, res) => {
     }
 });
 
-// 3. Obtener infiel por ID con detalles completos
+// 3. Obtener infiel por ID
 app.get('/api/infieles/:id', async (req, res) => {
     try {
         const infielId = req.params.id;
@@ -178,7 +203,7 @@ app.get('/api/infieles/:id', async (req, res) => {
     }
 });
 
-// 4. Agregar voto
+// 4. Votar
 app.post('/api/infieles/:id/votar', async (req, res) => {
     try {
         const { tipo } = req.body;
@@ -232,43 +257,14 @@ app.post('/api/infieles/:id/comentarios', async (req, res) => {
     }
 });
 
-// 6. Obtener estadísticas
-app.get('/api/estadisticas', async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT 
-                COUNT(*) as total_infieles,
-                SUM(votos_real) as total_votos_reales,
-                SUM(votos_falso) as total_votos_falsos,
-                (SELECT COUNT(*) FROM comentarios) as total_comentarios,
-                (SELECT COUNT(*) FROM pruebas) as total_pruebas
-            FROM infieles
-        `);
-        res.json(result.rows[0]);
-    } catch (error) {
-        console.error('Error obteniendo estadísticas:', error);
-        res.status(500).json({ error: 'Error del servidor' });
-    }
+// 6. Ruta para servir el index.html en todas las demás rutas (SPA)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Ruta de prueba
-app.get('/', (req, res) => {
-    res.json({ 
-        mensaje: 'API del Registro de Infieles', 
-        version: '1.0',
-        endpoints: [
-            'GET    /api/infieles',
-            'POST   /api/infieles',
-            'GET    /api/infieles/:id',
-            'POST   /api/infieles/:id/votar',
-            'POST   /api/infieles/:id/comentarios',
-            'GET    /api/estadisticas'
-        ]
-    });
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor escuchando en puerto ${PORT}`);
-    console.log(`📊 Base de datos: PostgreSQL en Render`);
+// Iniciar servidor
+app.listen(port, () => {
+    console.log(`🚀 Servidor ejecutándose en http://localhost:${port}`);
+    console.log(`📊 Conectado a PostgreSQL`);
+    console.log(`📁 Frontend servido desde: ${path.join(__dirname, 'public')}`);
 });
