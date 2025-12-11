@@ -1,14 +1,11 @@
 services:
   - type: web
-    name: infieles
-    env: node
-    buildCommand: npm install
-    startCommand: node server.js
+    name: infieles-api
+    env: docker
     plan: free
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: DBS_INF
-          property: connectionString
-      - key: NODE_ENV
-        value: production
+        sync: false
+      - key: PORT
+        value: 10000
