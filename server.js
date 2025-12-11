@@ -12,10 +12,12 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
 // Servir frontend
+/*
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+*/
 
 // LISTAR
 app.get("/infieles", async (req, res) => {
