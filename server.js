@@ -1,6 +1,12 @@
 import express from "express";
 import cors from "cors";
 import { pool } from "./db.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 const app = express();
 
@@ -11,6 +17,15 @@ app.use(express.json({ limit: "50mb" })); // 50 MB está bien si subes imágenes
 // ============================
 // LISTAR TODOS (con paginación opcional)
 // ============================
+
+// Servir archivos estáticos de /public
+app.use(express.static(path.join(__dirname, "public")));
+
+// Ruta principal -> index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 app.get("/infieles", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
