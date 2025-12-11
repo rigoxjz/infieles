@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
 import pkg from "pg";
 const { Pool } = pkg;
 
@@ -18,6 +20,19 @@ const upload = multer({ storage: multer.memoryStorage() });
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
+});
+
+// =======================
+// SERVIR CARPETA PUBLIC
+// =======================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.static(path.join(__dirname, "public")));
+
+// Al acceder a /, devuelve index.html
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // =======================
@@ -75,14 +90,12 @@ app.post("/votar", async (req, res) => {
     try {
         const { infiel_id, usuario, voto } = req.body;
 
-        // Evitar votos duplicados
         await pool.query(
             `INSERT INTO votos (infiel_id, usuario, voto) VALUES ($1,$2,$3)
              ON CONFLICT (infiel_id, usuario) DO NOTHING`,
             [infiel_id, usuario, voto]
         );
 
-        // Actualizar contador
         if (voto) {
             await pool.query("UPDATE infieles SET votos_reales=votos_reales+1 WHERE id=$1", [infiel_id]);
         } else {
@@ -118,7 +131,7 @@ app.post("/comentario", upload.array("fotos", 5), async (req, res) => {
 });
 
 // =======================
-// PORT Render
+// INICIAR SERVIDOR
 // =======================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("API lista en puerto", PORT));
