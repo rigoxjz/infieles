@@ -2,8 +2,8 @@
 // COPIA Y PEGA TODO ESTE ARCHIVO
 
 //const API = ""; // ← Funciona porque frontend y backend están en el mismo dominio
-const API = "";  // ← Nueva URL del backend
-//const API = "https://infieles-api.onrender.com";
+//const API = "";  // ← Nueva URL del backend
+const API = "https://infieles-api.onrender.com";
 
 
 // ============== MAYOR DE EDAD ==============
