@@ -35,13 +35,18 @@ async function cargarInfieles() {
         const card = document.createElement("div");
         card.classList.add("card");
 
+        // Asegurarse que reportero nunca esté vacío
+        const reportero = item.reportero && item.reportero.trim() !== "" ? item.reportero : "Anónimo";
+
         card.innerHTML = `
             <div class="card-header">${item.nombre} ${item.apellido}</div>
             <div class="card-body">
                 <p class="info"><strong>Edad:</strong> ${item.edad}</p>
                 <p class="info"><strong>Ubicación:</strong> ${item.ubicacion}</p>
-                <p class="info"><strong>Publicado por:</strong> ${item.reportero}</p>
-                <p class="info"><strong>Historia:</strong> ${item.historia.substring(0, 90)}... <button onclick="mostrarDetallePorId(${item.id})">Ver chisme completo</button></p>
+                <p class="info"><strong>Publicado por:</strong> ${reportero}</p>
+                <p class="info"><strong>Historia:</strong> ${item.historia.substring(0, 90)}... 
+                    <button onclick="mostrarDetallePorId(${item.id})">Ver chisme completo</button>
+                </p>
                 <div class="votos">
                     <button class="voto-btn" style="background:green" onclick="votar(${item.id}, true)">Es real (${item.votos_reales || 0})</button>
                     <button class="voto-btn" style="background:red" onclick="votar(${item.id}, false)">Es falso (${item.votos_falsos || 0})</button>
@@ -49,8 +54,8 @@ async function cargarInfieles() {
                 <div class="comentarios" id="comentarios-${item.id}">
                     ${item.comentarios.map(c => `
                         <div class="comentario">
-                            <strong>${c.propietario ? "Propietario" : c.nombre}:</strong> ${c.texto}
-                            ${c.fotos ? c.fotos.map(f => `<img src="data:image/jpeg;base64,${f}">`).join("") : ""}
+                            <strong>${c.propietario ? "Propietario" : c.nombre || "Anónimo"}:</strong> ${c.texto}
+                            ${c.fotos ? c.fotos.map(f => `<img src="data:image/jpeg;base64,${f}" style="width:100%;height:auto;margin:5px 0;">`).join("") : ""}
                         </div>
                     `).join("")}
                 </div>
@@ -77,10 +82,12 @@ async function mostrarDetallePorId(id) {
     const modal = document.getElementById("modal-chisme");
     modal.classList.add("active");
 
+    const reportero = item.reportero && item.reportero.trim() !== "" ? item.reportero : "Anónimo";
+
     let fotosHTML = "";
     if (item.fotos && item.fotos.length > 0) {
         item.fotos.forEach(f => {
-            fotosHTML += `<img src="data:image/jpeg;base64,${f}">`;
+            fotosHTML += `<img src="data:image/jpeg;base64,${f}" style="width:100%;height:auto;margin:5px 0;">`;
         });
     }
 
@@ -88,7 +95,7 @@ async function mostrarDetallePorId(id) {
         <h2>${item.nombre} ${item.apellido}</h2>
         <p><strong>Edad:</strong> ${item.edad}</p>
         <p><strong>Ubicación:</strong> ${item.ubicacion}</p>
-        <p><strong>Publicado por:</strong> ${item.reportero}</p>
+        <p><strong>Publicado por:</strong> ${reportero}</p>
         <p>${item.historia}</p>
         <div>${fotosHTML}</div>
     `;
