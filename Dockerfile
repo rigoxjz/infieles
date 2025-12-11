@@ -1,12 +1,25 @@
-FFROM node:18
+# Dockerfile
+FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+# Copiar package.json primero para cache de dependencias
+COPY package*.json ./
 
+# Instalar dependencias
+RUN npm ci --only=production
+
+# Copiar todo el código
 COPY . .
 
-EXPOSE 10000
+# Crear directorio para uploads (para desarrollo)
+RUN mkdir -p uploads && chmod 777 uploads
 
-CMD ["npm", "start"]
+# Crear directorio public si no existe
+RUN mkdir -p public
+
+# Puerto
+EXPOSE 3000
+
+# Comando para producción
+CMD ["node", "server.js"]
