@@ -6,20 +6,29 @@ const { Pool } = pkg;
 
 const app = express();
 
+// =========================
+// Middleware
+// =========================
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Multer memoria
+// Multer memoria (para fotos)
 const upload = multer({ storage: multer.memoryStorage() });
 
-// PostgreSQL Render
+// =========================
+// Conexión PostgreSQL
+// =========================
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString:
+        process.env.DATABASE_URL ||
+        "postgresql://infieles:cQ1eK3awcS9J8l6pgLm0P20VbLZikt5W@dpg-d4rm7umuk2gs73eauuug-a.oregon-postgres.render.com/dbinfieles",
     ssl: { rejectUnauthorized: false }
 });
 
-// GET – Lista
+// =========================
+// GET – Lista de infieles
+// =========================
 app.get("/infieles", async (req, res) => {
     try {
         const q = await pool.query("SELECT * FROM infieles ORDER BY id DESC");
@@ -30,13 +39,15 @@ app.get("/infieles", async (req, res) => {
     }
 });
 
-// POST – Nuevo
+// =========================
+// POST – Crear registro
+// =========================
 app.post("/nuevo", upload.array("fotos", 10), async (req, res) => {
     try {
         const { reportero, nombre, apellido, edad, ubicacion, historia } = req.body;
         const fotos = req.files?.map(f => f.buffer.toString("base64")) || [];
 
-        const sql = `
+        const q = `
             INSERT INTO infieles (reportero, nombre, apellido, edad, ubicacion, historia, fotos)
             VALUES ($1,$2,$3,$4,$5,$6,$7)
             RETURNING *;
@@ -52,18 +63,17 @@ app.post("/nuevo", upload.array("fotos", 10), async (req, res) => {
             fotos
         ];
 
-        const r = await pool.query(sql, values);
-
+        const r = await pool.query(q, values);
         res.json({ success: true, data: r.rows[0] });
 
     } catch (err) {
         console.error("Error POST:", err);
-        res.status(500).json({ error: "No se pudo guardar" });
+        res.status(500).json({ error: "Error al guardar", detalle: err.message });
     }
 });
 
-// PUERTO
+// =========================
+// PORT Render
+// =========================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-    console.log("API ejecutándose en puerto:", PORT)
-);
+app.listen(PORT, () => console.log("API lista en puerto", PORT));
