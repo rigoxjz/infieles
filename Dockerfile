@@ -1,20 +1,20 @@
-# Usa Node.js 18 (más estable)
+# Usa Node.js 18 (versión estable LTS)
 FROM node:18-alpine
 
 # Crea directorio de trabajo
 WORKDIR /app
 
-# Copia archivos de dependencias
+# Copia el package.json primero (optimización de caché de Docker)
 COPY package.json ./
 
-# Instala dependencias (usa npm install en lugar de npm ci)
-RUN npm install --only=production
+# Instala SOLO dependencias de producción
+RUN npm install --only=production --no-audit --no-fund
 
-# Copia todo el código
+# Copia todo el código fuente
 COPY . .
 
-# Expone el puerto que usa Express
-EXPORT 3000
+# Expone el puerto que usa Express (3000)
+EXPOSE 3000
 
-# Comando para iniciar
+# Comando para iniciar la aplicación
 CMD ["node", "server.js"]
