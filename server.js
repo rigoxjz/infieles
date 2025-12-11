@@ -1,25 +1,14 @@
 import express from "express";
 import cors from "cors";
 import { pool } from "./db.js";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 
-// Servir frontend
-/*
-app.use(express.static(path.join(__dirname, "public")));
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-*/
-
-// LISTAR
+// ============================
+// LISTAR TODOS
+// ============================
 app.get("/infieles", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -47,7 +36,9 @@ app.get("/infieles", async (req, res) => {
   }
 });
 
+// ============================
 // DETALLE
+// ============================
 app.get("/infieles/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -66,7 +57,9 @@ app.get("/infieles/:id", async (req, res) => {
   }
 });
 
-// CREAR CHISME (FUNCIONA 100%)
+// ============================
+// CREAR CHISME
+// ============================
 app.post("/infieles", async (req, res) => {
   try {
     const {
@@ -109,7 +102,9 @@ app.post("/infieles", async (req, res) => {
   }
 });
 
+// ============================
 // VOTAR
+// ============================
 app.post("/votar/:id", async (req, res) => {
   try {
     const { tipo } = req.body;
@@ -141,4 +136,4 @@ app.post("/votar/:id", async (req, res) => {
 app.use("*", (req, res) => res.status(404).json({ error: "Ruta no encontrada" }));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`ON en puerto ${PORT}`));
+app.listen(PORT, () => console.log(`API ON en puerto ${PORT}`));
