@@ -1,5 +1,6 @@
 // script.js - VERSIÓN FINAL 2025 (copia y pega todo)
-const API = "https://infieles-sya9.onrender.com";
+//const API = "https://infieles-sya9.onrender.com";
+const API = "https://infieles-api.onrender.com"; // ← tu nueva URL
 
 // MAYOR DE EDAD
 function confirmAge(ok){
