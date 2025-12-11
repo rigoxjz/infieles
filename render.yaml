@@ -1,14 +1,8 @@
 services:
+services:
   - type: web
-    name: infieles-api
+    name: infieles
     env: node
     buildCommand: npm install
     startCommand: node server.js
-    plan: free
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: DBS_INF
-          property: connectionString
-      - key: NODE_ENV
-        value: production
+    ...
