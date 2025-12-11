@@ -1,14 +1,22 @@
 {
-  "name": "infieles-api",
+  "name": "registro-infieles-backend",
   "version": "1.0.0",
-  "type": "module",
+  "description": "Backend para el Registro Nacional de Infieles",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.18.2",
-    "pg": "^8.11.1"
+    "pg": "^8.11.0",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 }
