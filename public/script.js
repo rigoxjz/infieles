@@ -14,18 +14,6 @@ function confirmAge(ok) {
     }
 }
 
-// =======================
-// SERVIR CARPETA PUBLIC
-// =======================
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(path.join(__dirname, "public")));
-
-// Al acceder a /, devuelve index.html
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
 // ======================
 // CARGAR CHISMES
 // ======================
@@ -47,7 +35,6 @@ async function cargarInfieles() {
         const card = document.createElement("div");
         card.classList.add("card");
 
-        // Asegurarse que reportero nunca esté vacío
         const reportero = item.reportero && item.reportero.trim() !== "" ? item.reportero : "Anónimo";
 
         card.innerHTML = `
@@ -56,7 +43,7 @@ async function cargarInfieles() {
                 <p class="info"><strong>Edad:</strong> ${item.edad}</p>
                 <p class="info"><strong>Ubicación:</strong> ${item.ubicacion}</p>
                 <p class="info"><strong>Publicado por:</strong> ${reportero}</p>
-                <p class="info"><strong>Historia:</strong> ${item.historia.substring(0, 90)}... 
+                <p class="info"><strong>Historia:</strong> ${item.historia.substring(0, 90)}...
                     <button onclick="mostrarDetallePorId(${item.id})">Ver chisme completo</button>
                 </p>
                 <div class="votos">
@@ -84,7 +71,7 @@ async function cargarInfieles() {
 }
 
 // ======================
-// MOSTRAR DETALLE COMPLETO
+// MOSTRAR DETALLE
 // ======================
 async function mostrarDetallePorId(id) {
     const res = await fetch(`${API}/infieles`);
@@ -98,9 +85,7 @@ async function mostrarDetallePorId(id) {
 
     let fotosHTML = "";
     if (item.fotos && item.fotos.length > 0) {
-        item.fotos.forEach(f => {
-            fotosHTML += `<img src="data:image/jpeg;base64,${f}" style="width:100%;height:auto;margin:5px 0;">`;
-        });
+        item.fotos.forEach(f => fotosHTML += `<img src="data:image/jpeg;base64,${f}" style="width:100%;height:auto;margin:5px 0;">`);
     }
 
     document.getElementById("detalle-chisme").innerHTML = `
@@ -120,13 +105,8 @@ function cerrarDetalle() {
 // ======================
 // FORMULARIO NUEVO CHISME
 // ======================
-document.getElementById("btn-agregar").onclick = () => {
-    document.getElementById("modal-form").classList.add("active");
-};
-
-function cerrarModal() {
-    document.getElementById("modal-form").classList.remove("active");
-}
+document.getElementById("btn-agregar").onclick = () => document.getElementById("modal-form").classList.add("active");
+function cerrarModal() { document.getElementById("modal-form").classList.remove("active"); }
 
 document.getElementById("form-infiel").onsubmit = async e => {
     e.preventDefault();
@@ -208,7 +188,6 @@ async function agregarComentario(id) {
 function filtrar() {
     const txt = document.getElementById("search-input").value.toLowerCase();
     const cards = document.querySelectorAll(".card");
-
     cards.forEach(c => {
         const t = c.innerText.toLowerCase();
         c.style.display = t.includes(txt) ? "block" : "none";
@@ -218,9 +197,5 @@ function filtrar() {
 // ======================
 // LEGAL
 // ======================
-document.getElementById("btn-legal").onclick = () => {
-    document.getElementById("modal-legal").classList.add("active");
-};
-function cerrarLegal() {
-    document.getElementById("modal-legal").classList.remove("active");
-}
+document.getElementById("btn-legal").onclick = () => document.getElementById("modal-legal").classList.add("active");
+function cerrarLegal() { document.getElementById("modal-legal").classList.remove("active"); }
