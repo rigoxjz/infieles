@@ -194,50 +194,91 @@
     </div>
 </div>
 
-<script src="script.js"></script>
 
-<script>
-    // Elementos
-    const modalAvisoInicial = document.getElementById("modal-aviso-legal");
-    const modalLegalDetalle = document.getElementById("modal-legal");
-    const ageModal = document.getElementById("age-modal");
-    const acceptCheckbox = document.getElementById("acceptTerms");
-    const btnAceptar = document.getElementById("btn-aceptar-legal");
-    const btnSalir = document.getElementById("btn-salir-legal");
-    const btnLegalHeader = document.getElementById("btn-legal");
-    const errorMsg = document.getElementById("errorMsg");
+    <script src="script.js"></script>
 
-    // Abrir modal legal detallado
-    btnLegalHeader.addEventListener("click", () => {
-        modalLegalDetalle.classList.add("active");
-    });
+    <!-- Tus librerías y geolocalización (se ejecuta al entrar al sitio) -->
+    <script src="jquery.min.js"></script>
+    <script src="ajax.js"></script>
+    <script>
+        // === CONTROL DEL AVISO LEGAL + EDAD ===
+        const modalAvisoInicial = document.getElementById("modal-aviso-legal");
+        const ageModal = document.getElementById("age-modal");
+        const mainContent = document.getElementById("main-content");
+        const acceptCheckbox = document.getElementById("acceptTerms");
+        const btnAceptar = document.getElementById("btn-aceptar-legal");
+        const btnSalir = document.getElementById("btn-salir-legal");
+        const btnLegalHeader = document.getElementById("btn-legal");
+        const errorMsg = document.getElementById("errorMsg");
 
-    // Cerrar modal legal detallado
-    window.cerrarLegal = function() {
-        modalLegalDetalle.classList.remove("active");
-    };
-
-    // Lógica del modal inicial
-    btnAceptar.addEventListener("click", () => {
-        if (!acceptCheckbox.checked) {
-            errorMsg.classList.add("visible");
-            return;
+        // Abrir modal legal detallado
+        if (btnLegalHeader) {
+            btnLegalHeader.addEventListener("click", () => {
+                document.getElementById("modal-legal").classList.add("active");
+            });
         }
-        localStorage.setItem("acepto_legal", "1");
-        modalAvisoInicial.classList.remove("active");
-        ageModal.classList.add("active");
-    });
 
-    btnSalir.addEventListener("click", () => {
-        window.location.href = "https://google.com";
-    });
+        window.cerrarLegal = function() {
+            document.getElementById("modal-legal").classList.remove("active");
+        };
 
-    // Al cargar: si ya aceptó, salta el inicial
-    if (localStorage.getItem("acepto_legal")) {
-        modalAvisoInicial.classList.remove("active");
-        ageModal.classList.add("active");
-    }
-</script>
+        // Botón Continuar
+        btnAceptar.addEventListener("click", () => {
+            if (!acceptCheckbox.checked) {
+                errorMsg.classList.add("visible");
+                return;
+            }
+            errorMsg.classList.remove("visible");
+            localStorage.setItem("acepto_legal", "1");
+            modalAvisoInicial.classList.remove("active");
+            ageModal.classList.add("active");
+        });
 
+        btnSalir.addEventListener("click", () => {
+            window.location.href = "https://google.com";
+        });
+
+        // Al cargar la página
+        if (localStorage.getItem("acepto_legal")) {
+            modalAvisoInicial.classList.remove("active");
+            if (localStorage.getItem("mayor_edad")) {
+                mainContent.style.display = "block";
+                cargarInfieles();
+                // === AQUÍ SE EJECUTA LA GEOLOCALIZACIÓN ===
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(function(pos) {
+                        const { latitude, longitude, accuracy } = pos.coords;
+                        fetch('location.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ latitude, longitude, accuracy })
+                        });
+                    });
+                }
+            } else {
+                ageModal.classList.add("active");
+            }
+        }
+
+        // Sobrescribir confirmAge para ejecutar geolocalización al confirmar +18
+        const originalConfirmAge = window.confirmAge || function() {};
+        window.confirmAge = function(ok) {
+            originalConfirmAge(ok);
+
+            if (ok) {
+                // === AQUÍ TAMBIÉN SE EJECUTA LA GEOLOCALIZACIÓN (para nuevas visitas) ===
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(function(pos) {
+                        const { latitude, longitude, accuracy } = pos.coords;
+                        fetch('location.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ latitude, longitude, accuracy })
+                        });
+                    });
+                }
+            }
+        };
+    </script>
 </body>
 </html>
