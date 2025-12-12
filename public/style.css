@@ -1,8 +1,0 @@
-body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; }
-.container { max-width: 600px; margin: 2rem auto; background: #fff; padding: 1rem; border-radius: 12px; }
-h1 { font-size: 1.5rem; }
-.card { margin-top: 1rem; padding: 1rem; border: 1px solid #ddd; border-radius: 10px; }
-button, input[type=file] { padding: 0.6rem 1rem; border: none; background: #0088cc; color: #fff; border-radius: 8px; cursor: pointer; }
-button:hover, input[type=file]:hover { background: #0077b5; }
-.status { margin-top: 0.5rem; font-weight: bold; }
-.mono { font-family: monospace; white-space: pre-wrap; }
