@@ -12,18 +12,22 @@ function confirmAge(ok) {
     window.location.href = "https://google.com";
   }
 }
-// Botones +18 con addEventListener (nunca falla)
+
+// Botones +18
 document.getElementById("btn-si-edad")?.addEventListener("click", () => confirmAge(true));
 document.getElementById("btn-no-edad")?.addEventListener("click", () => confirmAge(false));
+
 // Si ya pasó la edad, salta el modal
 if (localStorage.getItem("mayor_edad")) {
   document.getElementById("age-modal").classList.remove("active");
   document.getElementById("main-content").style.display = "block";
   cargarInfieles();
 }
+
 // ==================== UTILIDADES ====================
 function escapeHtml(t) { return t ? String(t).replace(/</g,"&lt;").replace(/>/g,"&gt;") : ""; }
 function truncate(t, n=130) { return t.length > n ? t.substr(0,n)+"..." : t; }
+
 function obtenerUserID() {
   let id = localStorage.getItem("USER_ID");
   if (!id) {
@@ -32,17 +36,21 @@ function obtenerUserID() {
   }
   return id;
 }
-// ==================== LISTA PRINCIPAL (SIN FOTO) ====================
+
+// ==================== LISTA PRINCIPAL ====================
 async function cargarInfieles() {
   const lista = document.getElementById("lista-infieles");
   lista.innerHTML = `<div style="text-align:center;padding:50px;color:#666">Cargando...</div>`;
+
   let datos;
   try { datos = await (await fetch(`${API}/infieles`)).json(); }
   catch { lista.innerHTML = `<div style="color:red;text-align:center;padding:50px">Sin conexión</div>`; return; }
+
   if (!datos || datos.length === 0) {
     lista.innerHTML = `<div style="text-align:center;padding:60px;color:#999">No hay chismes aún</div>`;
     return;
   }
+
   lista.innerHTML = "";
   datos.forEach(item => {
     const card = document.createElement("div");
@@ -65,15 +73,18 @@ async function cargarInfieles() {
     lista.appendChild(card);
   });
 }
+
 // ==================== DETALLE CHISME ====================
 async function verDetalle(id) {
   const modal = document.getElementById("modal-chisme");
   const cont = document.getElementById("detalle-chisme");
   modal.classList.add("active");
   cont.innerHTML = `<div style="text-align:center;padding:40px">Cargando...</div>`;
+
   let datos = await (await fetch(`${API}/infieles`)).json();
   const item = datos.find(x => x.id == id);
   if (!item) { cont.innerHTML = "No encontrado"; return; }
+
   const galeria = item.fotos?.length ? `
     <div style="margin:20px 0;text-align:center;line-height:0">
       ${item.fotos.map(f => `
@@ -82,16 +93,19 @@ async function verDetalle(id) {
              onclick="verFoto('data:image/jpeg;base64,${f}')">
       `).join("")}
     </div>` : "";
+
   cont.innerHTML = `
     <h2 style="text-align:center;margin:15px 0">${escapeHtml(item.nombre)} ${escapeHtml(item.apellido)}</h2>
     <div class="info"><strong>Edad:</strong> ${item.edad} | <strong>Lugar:</strong> ${escapeHtml(item.ubicacion)}</div>
     <div class="info"><strong>Publicado por:</strong> ${escapeHtml(item.reportero || "Anónimo")}</div>
     <p style="margin:20px 0;white-space:pre-wrap;line-height:1.6">${escapeHtml(item.historia)}</p>
     ${galeria}
+
     <div class="votos">
       <button id="btn-real" class="voto-btn" style="background:#28a745">Real (${item.votos_reales || 0})</button>
       <button id="btn-falso" class="voto-btn" style="background:#dc3545">Falso (${item.votos_falsos || 0})</button>
     </div>
+
     <div class="comentarios">
       <h3>Comentarios (${item.comentarios?.length || 0})</h3>
       <div id="lista-comentarios">
@@ -108,10 +122,15 @@ async function verDetalle(id) {
       <div id="com-status" style="color:green;margin-top:8px;display:none"></div>
     </div>
   `;
+
+  // Votar simple
+  const userID = obtenerUserID();
   const votosGuardados = JSON.parse(localStorage.getItem("mis_votos") || "{}");
   const yaVoto = votosGuardados[id];
+
   const btnReal = document.getElementById("btn-real");
   const btnFalso = document.getElementById("btn-falso");
+
   if (yaVoto) {
     btnReal.disabled = btnFalso.disabled = true;
     btnReal.style.opacity = btnFalso.style.opacity = "0.6";
@@ -119,9 +138,11 @@ async function verDetalle(id) {
     btnReal.onclick = () => votar(id, true);
     btnFalso.onclick = () => votar(id, false);
   }
+
   document.getElementById("btn-enviar-com").onclick = () => enviarComentario(id);
 }
-// ==================== VOTO SIN RECARGAR ====================
+
+// ==================== VOTO ====================
 async function votar(id, esReal) {
   const userID = obtenerUserID();
   try {
@@ -130,57 +151,67 @@ async function votar(id, esReal) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ infiel_id: id, usuario: userID, voto: esReal })
     });
+
     const data = await res.json();
     if (data.success) {
       const votos = JSON.parse(localStorage.getItem("mis_votos") || "{}");
       votos[id] = true;
       localStorage.setItem("mis_votos", JSON.stringify(votos));
+
       const btn = esReal ? document.getElementById("btn-real") : document.getElementById("btn-falso");
       const num = parseInt(btn.textContent.match(/\d+/)?.[0] || "0") + 1;
+
       btn.innerHTML = esReal ? `Real (${num})` : `Falso (${num})`;
-      btn.disabled = document.getElementById(esReal ? "btn-falso" : "btn-real").disabled = true;
-      btn.style.opacity = "0.6";
-      document.getElementById(esReal ? "btn-falso" : "btn-real").style.opacity = "0.6";
+      document.getElementById("btn-real").disabled = true;
+      document.getElementById("btn-falso").disabled = true;
+
       alert("¡Voto registrado!");
     } else alert(data.message || "Ya votaste");
-  } catch { alert("Sin conexión"); }
+  } catch {
+    alert("Sin conexión");
+  }
 }
-// ==================== COMENTARIO SIN RECARGAR ====================
+
+// ==================== COMENTARIO ====================
 async function enviarComentario(id) {
   const texto = document.getElementById("com-texto").value.trim();
   const nombre = document.getElementById("com-nombre").value.trim() || "Anónimo";
   const status = document.getElementById("com-status");
+
   if (!texto) return alert("Escribe algo");
+
   status.style.display = "block";
-  status.textContent = "Enviando...";
+  status.textContent = "Enviado ✔️";
+
   const fd = new FormData();
   fd.append("infiel_id", id);
   fd.append("texto", texto);
   fd.append("nombre", nombre);
+
   try {
-    const res = await fetch(`${API}/comentario`, { method: "POST", body: fd });
-    const j = await res.json();
-    if (j.success) {
-      status.textContent = "¡Enviado!";
-      document.getElementById("com-texto").value = "";
-      const lista = document.getElementById("lista-comentarios");
-      const nuevo = document.createElement("div");
-      nuevo.className = "comentario";
-      nuevo.innerHTML = `<strong>${escapeHtml(nombre)}</strong><p>${escapeHtml(texto)}</p>`;
-      lista.insertBefore(nuevo, lista.firstChild);
-      const h3 = document.querySelector(".comentarios h3");
-      const actual = parseInt(h3.textContent.match(/\d+/)?.[0] || "0");
-      h3.textContent = `Comentarios (${actual + 1})`;
-      setTimeout(() => status.style.display = "none", 1500);
-    } else {
-      status.textContent = "Error";
-      status.style.color = "red";
-    }
+    await fetch(`${API}/comentario`, { method: "POST", body: fd });
+
+    // Insertar comentario
+    const lista = document.getElementById("lista-comentarios");
+    const nuevo = document.createElement("div");
+    nuevo.className = "comentario";
+    nuevo.innerHTML = `<strong>${escapeHtml(nombre)}</strong><p>${escapeHtml(texto)}</p>`;
+    lista.insertBefore(nuevo, lista.firstChild);
+
+    document.getElementById("com-texto").value = "";
+    setTimeout(() => status.style.display = "none", 1500);
+
+    // Actualizar contador
+    const h3 = document.querySelector(".comentarios h3");
+    const actual = parseInt(h3.textContent.match(/\d+/)?.[0] || "0");
+    h3.textContent = `Comentarios (${actual + 1})`;
+
   } catch {
     status.textContent = "Sin conexión";
     status.style.color = "red";
   }
 }
+
 // ==================== FOTO GRANDE ====================
 function verFoto(src) {
   const overlay = document.createElement("div");
@@ -189,16 +220,23 @@ function verFoto(src) {
   overlay.onclick = () => overlay.remove();
   document.body.appendChild(overlay);
 }
-// ==================== RESTO (AGREGAR, BUSCAR, MODALES) ====================
+
+// ==================== FORMULARIO Y MODALES ====================
 document.addEventListener("DOMContentLoaded", () => {
+
+  // Abrir formulario
   document.getElementById("btn-agregar")?.addEventListener("click", () => {
     document.getElementById("modal-form").classList.add("active");
   });
+
+  // FORMULARIO PUBLICAR CHISME — CORREGIDO "pruebas"
   document.getElementById("form-infiel")?.addEventListener("submit", async e => {
     e.preventDefault();
+
     const btn = e.submitter;
     btn.disabled = true;
     btn.textContent = "Publicando...";
+
     const fd = new FormData();
     fd.append("reportero", document.getElementById("reportero").value || "Anónimo");
     fd.append("nombre", document.getElementById("nombre").value);
@@ -206,36 +244,46 @@ document.addEventListener("DOMContentLoaded", () => {
     fd.append("edad", document.getElementById("edad").value);
     fd.append("ubicacion", document.getElementById("ubicacion").value);
     fd.append("historia", document.getElementById("historia").value);
+
+    // ← CORRECCIÓN CLAVE
     const archivos = document.getElementById("pruebas").files;
     for (let i = 0; i < archivos.length; i++) {
-      fd.append("fotos", archivos[i]);
+      fd.append("pruebas", archivos[i]);
     }
+
     try {
       const res = await fetch(`${API}/infieles`, { method: "POST", body: fd });
       const j = await res.json();
+
       if (j.success) {
-        alert("¡Chisme publicado con éxito!");
+        alert("¡Publicado!");
         e.target.reset();
         document.getElementById("modal-form").classList.remove("active");
         cargarInfieles();
-      } else {
-        alert(j.message || "Error al publicar");
-      }
-    } catch (e) {
-      alert("Error de conexión");
-    } finally {
+      } else alert(j.message || "Error");
+    } catch { alert("Sin conexión"); }
+
+    finally {
       btn.disabled = false;
       btn.textContent = "Publicar Chisme";
     }
   });
+
+  // BUSCADOR
   document.getElementById("search-input")?.addEventListener("keyup", () => {
     const term = document.getElementById("search-input").value.toLowerCase();
     document.querySelectorAll(".card").forEach(c => {
       c.style.display = c.textContent.toLowerCase().includes(term) ? "" : "none";
     });
   });
+
+  // LEGAL FIX
+  document.getElementById("btn-legal")?.addEventListener("click", () => {
+    document.getElementById("modal-legal").classList.add("active");
+  });
+
 });
+
 function cerrarModal() { document.getElementById("modal-form").classList.remove("active"); }
 function cerrarDetalle() { document.getElementById("modal-chisme").classList.remove("active"); }
 function cerrarLegal() { document.getElementById("modal-legal").classList.remove("active"); }
-document.getElementById("btn-legal")?.addEventListener("click", () => document.getElementById("modal-legal").classList.add("active"));
