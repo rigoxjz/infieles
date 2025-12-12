@@ -1,5 +1,5 @@
 // =========================
-// script.js (corregido)
+// script.js (versión final corregida)
 // =========================
 const API = "https://infieles-v2.onrender.com";
 
@@ -10,29 +10,27 @@ function escapeHtml(s){ if(s==null) return ""; return String(s).replace(/&/g,"&a
 function truncate(s,n=90){ if(!s) return ""; return s.length>n ? s.substring(0,n)+"..." : s; }
 
 // -------------------------
-// Edad (función global usada por los botones inline del HTML)
+// Edad
 // -------------------------
 function confirmAge(ok){
   const ageModal = document.getElementById("age-modal");
   const mainContent = document.getElementById("main-content");
   if(ok){
-    if(ageModal) { ageModal.classList.remove("active"); ageModal.style.display = "none"; }
-    if(mainContent) mainContent.style.display = "block";
-    // cargar chismes la primera vez que confirman
+    ageModal.style.display = "none";
+    mainContent.style.display = "block";
     cargarInfieles();
   } else {
     alert("No puedes entrar");
     window.location.href = "https://google.com";
   }
 }
-window.confirmAge = confirmAge; // se expone globalmente para onclick inline
+window.confirmAge = confirmAge;
 
 // -------------------------
-// Cargar chismes (lista principal)
+// Cargar lista principal
 // -------------------------
 async function cargarInfieles(){
   const lista = document.getElementById("lista-infieles");
-  if(!lista) return;
   lista.innerHTML = "<p style='text-align:center;padding:18px'>Cargando chismes...</p>";
 
   let datos;
@@ -40,43 +38,41 @@ async function cargarInfieles(){
     const res = await fetch(`${API}/infieles`);
     datos = await res.json();
   }catch(e){
-    console.error("Error fetch /infieles",e);
-    lista.innerHTML = "<p style='text-align:center;padding:18px;color:red'>Error al cargar chismes</p>";
+    lista.innerHTML = "<p style='text-align:center;color:red'>Error al cargar</p>";
     return;
   }
 
   lista.innerHTML = "";
-  if(!Array.isArray(datos) || datos.length === 0){
-    lista.innerHTML = "<p style='text-align:center;padding:18px'>No hay chismes aún</p>";
+  if(!Array.isArray(datos) || datos.length===0){
+    lista.innerHTML = "<p style='text-align:center;padding:18px'>No hay chismes</p>";
     return;
   }
 
   datos.forEach(item=>{
-    const reportero = item.reportero && item.reportero.trim()!=="" ? item.reportero : "Anónimo";
-    const votosReales = Number(item.votos_reales || 0);
-    const votosFalsos = Number(item.votos_falsos || 0);
-    const comentariosCount = Array.isArray(item.comentarios) ? item.comentarios.length : 0;
+    const card = document.createElement("div");
+    const reportero = item.reportero || "Anónimo";
+    const votosReales = item.votos_reales || 0;
+    const votosFalsos = item.votos_falsos || 0;
+    const comentarios = item.comentarios?.length || 0;
 
-    // miniatura HTML (usa primera foto si existe)
     let thumbHTML = "";
-    if(Array.isArray(item.fotos) && item.fotos.length > 0){
-      thumbHTML = `<div style="padding:12px"><img src="data:image/jpeg;base64,${item.fotos[0]}" alt="prueba" style="width:120px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="mostrarDetallePorId(${item.id})"></div>`;
+    if(item.fotos?.length > 0){
+      thumbHTML = `<img src="data:image/jpeg;base64,${item.fotos[0]}" style="width:120px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="mostrarDetallePorId(${item.id})">`;
     }
 
-    const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
       <div class="card-header">${escapeHtml(item.nombre)} ${escapeHtml(item.apellido)}</div>
-      <div class="card-body" style="display:flex;gap:12px;align-items:flex-start">
+      <div class="card-body" style="display:flex;gap:12px">
         ${thumbHTML}
         <div style="flex:1">
-          <p class="info"><strong>Edad:</strong> ${escapeHtml(String(item.edad||""))}</p>
-          <p class="info"><strong>Ubicación:</strong> ${escapeHtml(item.ubicacion||"")}</p>
-          <p class="info"><strong>Publicado por:</strong> ${escapeHtml(reportero)}</p>
-          <p class="info"><strong>Historia:</strong> ${escapeHtml(truncate(item.historia||"",90))}</p>
+          <p><strong>Edad:</strong> ${escapeHtml(String(item.edad||""))}</p>
+          <p><strong>Ubicación:</strong> ${escapeHtml(item.ubicacion||"")}</p>
+          <p><strong>Publicado por:</strong> ${escapeHtml(reportero)}</p>
+          <p><strong>Historia:</strong> ${escapeHtml(truncate(item.historia,90))}</p>
 
-          <div style="margin-top:8px;background:#f8f9fa;padding:8px;border-radius:8px;font-size:0.95em">
-            ✔️ Reales: <strong>${votosReales}</strong> &nbsp;&nbsp; ❌ Falsos: <strong>${votosFalsos}</strong> &nbsp;&nbsp; 💬 <strong>${comentariosCount}</strong>
+          <div style="margin-top:8px;background:#f8f9fa;padding:8px;border-radius:8px;">
+            ✔️ ${votosReales} &nbsp;&nbsp; ❌ ${votosFalsos} &nbsp;&nbsp; 💬 ${comentarios}
           </div>
 
           <button class="btn btn-azul btn-ver" data-id="${item.id}" style="margin-top:10px">Ver chisme completo</button>
@@ -86,175 +82,179 @@ async function cargarInfieles(){
     lista.appendChild(card);
   });
 
-  // atachar listeners a botones ver
   document.querySelectorAll(".btn-ver").forEach(btn=>{
-    btn.removeEventListener("click", _onVerClick);
-    btn.addEventListener("click", _onVerClick);
+    btn.addEventListener("click", e=>{
+      mostrarDetallePorId(e.target.getAttribute("data-id"));
+    });
   });
 }
-function _onVerClick(e){ const id = e.currentTarget.getAttribute("data-id"); if(id) mostrarDetallePorId(Number(id)); }
 window.cargarInfieles = cargarInfieles;
 
 // -------------------------
-// Mostrar detalle en modal (carga votos y comentarios al abrir)
+// Mostrar detalle con votos y comentarios
 // -------------------------
 async function mostrarDetallePorId(id){
   const modal = document.getElementById("modal-chisme");
   const detalle = document.getElementById("detalle-chisme");
-  if(!modal || !detalle) return;
-  detalle.innerHTML = "<p style='text-align:center;padding:18px'>Cargando...</p>";
+
   modal.classList.add("active");
+  detalle.innerHTML = "<p style='text-align:center;padding:18px'>Cargando...</p>";
 
   let datos;
   try{
     const res = await fetch(`${API}/infieles`);
     datos = await res.json();
   }catch(e){
-    console.error("Error fetch detalle", e);
-    detalle.innerHTML = "<p style='color:red'>Error al obtener detalle</p>";
+    detalle.innerHTML = "<p style='color:red'>Error al cargar</p>";
     return;
   }
 
-  const item = Array.isArray(datos) ? datos.find(x=>Number(x.id)===Number(id)) : null;
-  if(!item){ detalle.innerHTML = "<p>Chisme no encontrado</p>"; return; }
+  const item = datos.find(x => Number(x.id) === Number(id));
+  if(!item){ detalle.innerHTML="<p>No encontrado</p>"; return; }
 
-  const reportero = item.reportero && item.reportero.trim()!=="" ? item.reportero : "Anónimo";
-  const fotos = Array.isArray(item.fotos) ? item.fotos : [];
-  const comentarios = Array.isArray(item.comentarios) ? item.comentarios : [];
-  const votosReales = Number(item.votos_reales || 0);
-  const votosFalsos = Number(item.votos_falsos || 0);
-
-  // thumbnails en modal
+  const fotos = item.fotos || [];
   let fotosHTML = "";
+
   if(fotos.length>0){
-    fotosHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap">';
-    fotos.forEach((f,idx)=> {
-      fotosHTML += `<img src="data:image/jpeg;base64,${f}" data-full="data:image/jpeg;base64,${f}" style="width:90px;height:70px;object-fit:cover;border-radius:8px;cursor:pointer">`;
-    });
-    fotosHTML += "</div>";
+    fotosHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap">` +
+      fotos.map(f => `<img src="data:image/jpeg;base64,${f}" style="width:90px;height:70px;border-radius:8px;cursor:pointer" onclick="openImageViewer('data:image/jpeg;base64,${f}')">`).join("") +
+      `</div>`;
   }
 
-  // comentarios html
-  let comentariosHTML = comentarios.length ? comentarios.map(c=>{
-    const nombre = c.nombre && c.nombre.trim()!=="" ? c.nombre : "Anónimo";
-    const propietarioLabel = c.propietario ? ' <strong style="color:var(--azul)">(Propietario)</strong>' : '';
-    const fotosC = Array.isArray(c.fotos) ? c.fotos.map(ff=>`<img src="data:image/jpeg;base64,${ff}" style="width:100%;height:auto;margin-top:8px;border-radius:8px;cursor:pointer">`).join("") : "";
-    return `<div class="comentario"><strong>${escapeHtml(nombre)}</strong>${propietarioLabel}<p>${escapeHtml(c.texto)}</p>${fotosC}</div>`;
-  }).join("") : "<p>No hay comentarios aún</p>";
+  let comentariosHTML = item.comentarios?.length
+    ? item.comentarios.map(c=>{
+        const fotosC = c.fotos?.map(ff=>`<img src="data:image/jpeg;base64,${ff}" style="width:100%;border-radius:8px;margin-top:8px">`).join("") || "";
+        return `<div class="comentario">
+          <strong>${escapeHtml(c.nombre||"Anónimo")}</strong>
+          <p>${escapeHtml(c.texto)}</p>
+          ${fotosC}
+        </div>`;
+      }).join("")
+    : "<p>No hay comentarios aún</p>";
 
   detalle.innerHTML = `
-    <h2>${escapeHtml(item.nombre)} ${escapeHtml(item.apellido)}</h2>
-    <p class="info"><strong>Edad:</strong> ${escapeHtml(String(item.edad||""))}</p>
-    <p class="info"><strong>Ubicación:</strong> ${escapeHtml(item.ubicacion||"")}</p>
-    <p class="info"><strong>Publicado por:</strong> ${escapeHtml(reportero)}</p>
-    <p style="white-space:pre-wrap">${escapeHtml(item.historia || "")}</p>
+    <h2>${item.nombre} ${item.apellido}</h2>
+    <p><strong>Edad:</strong> ${item.edad}</p>
+    <p><strong>Ubicación:</strong> ${item.ubicacion}</p>
+    <p><strong>Publicado por:</strong> ${item.reportero||"Anónimo"}</p>
+    <p style="white-space:pre-wrap">${escapeHtml(item.historia)}</p>
 
     ${fotosHTML}
 
     <div class="votos" style="margin-top:12px">
-      <button id="btn-votar-real" class="voto-btn" style="background:green">Es real (${votosReales})</button>
-      <button id="btn-votar-falso" class="voto-btn" style="background:red">Es falso (${votosFalsos})</button>
+      <button id="btn-real" class="voto-btn" style="background:green">Es real (${item.votos_reales})</button>
+      <button id="btn-falso" class="voto-btn" style="background:red">Es falso (${item.votos_falsos})</button>
     </div>
 
-    <div class="comentarios" style="margin-top:18px">
+    <div style="margin-top:18px">
       <h3>Comentarios</h3>
       <div id="lista-comentarios">${comentariosHTML}</div>
 
       <h4 style="margin-top:12px">Agregar comentario</h4>
-      <input id="coment-nombre-modal" type="text" placeholder="Tu nombre (opcional)" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px">
-      <textarea id="coment-texto-modal" placeholder="Tu comentario" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;min-height:80px"></textarea>
-      <input id="coment-fotos-modal" type="file" accept="image/*" multiple style="margin-top:8px">
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button id="coment-submit" class="btn btn-azul">Comentar</button>
-        <button id="cerrar-detalle" class="btn btn-rojo">Cerrar</button>
-      </div>
-      <div id="coment-status" style="margin-top:8px;color:green;display:none"></div>
+      <input id="coment-nombre" type="text" placeholder="Tu nombre (opcional)" style="width:100%;padding:10px;margin-bottom:8px">
+      <textarea id="coment-texto" placeholder="Tu comentario" style="width:100%;padding:10px;min-height:80px"></textarea>
+      <input id="coment-fotos" type="file" accept="image/*" multiple style="margin-top:8px">
+
+      <button id="enviar-comentario" class="btn btn-azul" style="margin-top:10px;width:100%">Enviar comentario</button>
+      <p id="coment-status" style="margin-top:10px;color:green;display:none"></p>
+
+      <button id="cerrar-detalle" class="btn btn-rojo" style="margin-top:12px;width:100%">Cerrar</button>
     </div>
   `;
 
-  // ampliar imágenes con simple viewer
-  document.querySelectorAll('#detalle-chisme img[data-full]').forEach(img=>{
-    img.addEventListener('click', ()=> openImageViewer(img.getAttribute('data-full')));
-  });
+  // -------------------------
+  // VOTAR SIN NOMBRE
+  // -------------------------
+  const yaVoto = localStorage.getItem(`voto_infiel_${id}`);
 
-  // votos: simple bloqueo con localStorage (no pide nombre)
-  const btnReal = document.getElementById("btn-votar-real");
-  const btnFalso = document.getElementById("btn-votar-falso");
-  if(localStorage.getItem(`voto_real_${id}`)) btnReal.disabled = true;
-  if(localStorage.getItem(`voto_falso_${id}`)) btnFalso.disabled = true;
+  const btnReal = document.getElementById("btn-real");
+  const btnFalso = document.getElementById("btn-falso");
 
-  btnReal.addEventListener('click', async ()=>{
-    if(localStorage.getItem(`voto_real_${id}`) || localStorage.getItem(`voto_falso_${id}`)){ alert("Ya votaste"); return; }
+  if(yaVoto){
+    btnReal.disabled = true;
+    btnFalso.disabled = true;
+  }
+
+  btnReal.onclick = async ()=>{
+    if(localStorage.getItem(`voto_infiel_${id}`)) return alert("Ya votaste");
+    await enviarVoto(id,true);
+  };
+
+  btnFalso.onclick = async ()=>{
+    if(localStorage.getItem(`voto_infiel_${id}`)) return alert("Ya votaste");
+    await enviarVoto(id,false);
+  };
+
+  async function enviarVoto(id, votoReal){
     try{
-      const r = await fetch(`${API}/votar`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ infiel_id:id, usuario: `anon-${navigator.userAgent}`, voto:true })});
+      const r = await fetch(`${API}/votar`,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          infiel_id:id,
+          usuario:"anon", // ya no pide nombre
+          voto:votoReal
+        })
+      });
+
       const j = await r.json();
       if(r.ok && j.success){
-        localStorage.setItem(`voto_real_${id}`, "1");
+        localStorage.setItem(`voto_infiel_${id}`,"1");
         mostrarDetallePorId(id);
         cargarInfieles();
-      } else {
-        alert(j.error || "Error al votar");
-      }
-    }catch(e){ console.error(e); alert("Error al votar"); }
-  });
+      } else alert(j.error||"Error al votar");
+    }catch(e){
+      alert("Error al votar");
+    }
+  }
 
-  btnFalso.addEventListener('click', async ()=>{
-    if(localStorage.getItem(`voto_real_${id}`) || localStorage.getItem(`voto_falso_${id}`)){ alert("Ya votaste"); return; }
-    try{
-      const r = await fetch(`${API}/votar`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ infiel_id:id, usuario: `anon-${navigator.userAgent}`, voto:false })});
-      const j = await r.json();
-      if(r.ok && j.success){
-        localStorage.setItem(`voto_falso_${id}`, "1");
-        mostrarDetallePorId(id);
-        cargarInfieles();
-      } else {
-        alert(j.error || "Error al votar");
-      }
-    }catch(e){ console.error(e); alert("Error al votar"); }
-  });
-
-  // comentar: no recargar página; mostrar "Comentario enviado"
-  document.getElementById("coment-submit").addEventListener('click', async ()=>{
-    const nombre = document.getElementById("coment-nombre-modal").value || "Anónimo";
-    const texto = document.getElementById("coment-texto-modal").value || "";
-    const archivos = document.getElementById("coment-fotos-modal").files;
+  // -------------------------
+  // ENVIAR COMENTARIO
+  // -------------------------
+  document.getElementById("enviar-comentario").onclick = async ()=>{
+    const nombre = document.getElementById("coment-nombre").value || "Anónimo";
+    const texto = document.getElementById("coment-texto").value;
+    const archivos = document.getElementById("coment-fotos").files;
     const status = document.getElementById("coment-status");
-    if(!texto.trim()){ alert("Escribe un comentario"); return; }
+
+    if(!texto.trim()) return alert("Escribe un comentario");
 
     const fd = new FormData();
     fd.append("infiel_id", id);
     fd.append("nombre", nombre);
     fd.append("texto", texto);
-    fd.append("propietario", (nombre.trim()!=="" && nombre.trim() === (item.reportero||"").trim()) );
     for(let a of archivos) fd.append("fotos", a);
 
     try{
-      const r = await fetch(`${API}/comentario`, { method:"POST", body: fd });
+      const r = await fetch(`${API}/comentario`,{ method:"POST", body:fd });
       const j = await r.json();
       if(r.ok && j.success){
-        // limpiar inputs y mostrar mensaje
-        document.getElementById("coment-nombre-modal").value = "";
-        document.getElementById("coment-texto-modal").value = "";
-        document.getElementById("coment-fotos-modal").value = "";
-        status.style.display = "block";
-        status.textContent = "Comentario enviado";
-        // actualizar lista de comentarios sin recargar: obtener nuevo comentario (simple: recargar modal)
-        mostrarDetallePorId(id);
-      } else {
-        alert(j.error || "Error al comentar");
-      }
-    }catch(e){ console.error(e); alert("Error al comentar"); }
-  });
+        status.style.display="block";
+        status.textContent="Comentario enviado";
 
-  // cerrar detalle
-  document.getElementById("cerrar-detalle").addEventListener('click', ()=>{
-    document.getElementById("modal-chisme").classList.remove("active");
-  });
+        document.getElementById("coment-nombre").value="";
+        document.getElementById("coment-texto").value="";
+        document.getElementById("coment-fotos").value="";
+
+        setTimeout(()=>mostrarDetallePorId(id),600);
+      } else alert(j.error||"Error al comentar");
+    }catch(e){
+      alert("Error al comentar");
+    }
+  };
+
+  // -------------------------
+  // CERRAR
+  // -------------------------
+  document.getElementById("cerrar-detalle").onclick = ()=>{
+    modal.classList.remove("active");
+  };
 }
+
 window.mostrarDetallePorId = mostrarDetallePorId;
 
 // -------------------------
-// Image viewer
+// VISOR DE IMÁGENES
 // -------------------------
 function openImageViewer(src){
   let v = document.getElementById("image-viewer");
@@ -262,28 +262,21 @@ function openImageViewer(src){
     v = document.createElement("div");
     v.id = "image-viewer";
     v.style = "position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:9999";
-    v.innerHTML = `<img id="image-viewer-img" src="${src}" style="max-width:95%;max-height:95%;border-radius:8px">`;
-    v.addEventListener('click', ()=> v.style.display = 'none');
+    v.innerHTML = `<img src="${src}" style="max-width:95%;max-height:95%;border-radius:8px">`;
+    v.onclick = ()=> v.style.display="none";
     document.body.appendChild(v);
   } else {
-    document.getElementById("image-viewer-img").src = src;
-    v.style.display = "flex";
+    v.children[0].src = src;
+    v.style.display="flex";
   }
 }
-function closeImageViewer(){ const v = document.getElementById("image-viewer"); if(v) v.style.display='none'; }
 
 // -------------------------
-// Abrir modal form/legal, y close handlers
+// Publicar nuevo chisme
 // -------------------------
-document.getElementById("btn-agregar")?.addEventListener('click', ()=> document.getElementById("modal-form").classList.add("active"));
-document.getElementById("btn-legal")?.addEventListener('click', ()=> document.getElementById("modal-legal").classList.add("active"));
-document.querySelectorAll(".close").forEach(c => c.addEventListener('click', ()=> c.closest('.modal')?.classList.remove('active')));
-
-// -------------------------
-// Envío formulario nuevo chisme (mantiene flujo)
-// -------------------------
-document.getElementById("form-infiel")?.addEventListener('submit', async (e)=>{
+document.getElementById("form-infiel")?.addEventListener("submit", async (e)=>{
   e.preventDefault();
+
   const fd = new FormData();
   fd.append("reportero", document.getElementById("reportero").value);
   fd.append("nombre", document.getElementById("nombre").value);
@@ -291,33 +284,18 @@ document.getElementById("form-infiel")?.addEventListener('submit', async (e)=>{
   fd.append("edad", document.getElementById("edad").value);
   fd.append("ubicacion", document.getElementById("ubicacion").value);
   fd.append("historia", document.getElementById("historia").value);
+
   const archivos = document.getElementById("pruebas").files;
   for(let a of archivos) fd.append("fotos", a);
 
   try{
-    const r = await fetch(`${API}/nuevo`, { method:"POST", body: fd });
+    const r = await fetch(`${API}/nuevo`,{ method:"POST", body:fd });
     const j = await r.json();
     if(r.ok && j.success){
       document.getElementById("modal-form").classList.remove("active");
       cargarInfieles();
-    } else {
-      alert(j.error || "Error al publicar");
-    }
-  }catch(e){ console.error(e); alert("Error al publicar"); }
-});
-
-// -------------------------
-// Filtrar
-// -------------------------
-function filtrar(){
-  const txt = (document.getElementById("search-input")?.value || "").toLowerCase();
-  document.querySelectorAll(".card").forEach(c => c.style.display = c.innerText.toLowerCase().includes(txt) ? "block" : "none");
-}
-window.filtrar = filtrar;
-
-// -------------------------
-// Init: no cerrar modal por defecto (ya en HTML)
-// -------------------------
-document.addEventListener("DOMContentLoaded", ()=> {
-  // Si deseas recordar que el usuario confirmó edad: usar localStorage aquí
+    } else alert(j.error||"Error al publicar");
+  }catch(e){
+    alert("Error al publicar");
+  }
 });
