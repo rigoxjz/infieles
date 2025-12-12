@@ -295,14 +295,13 @@
     // Elementos
     const modalAvisoInicial = document.getElementById("modal-aviso-legal");
     const modalLegalDetalle = document.getElementById("modal-legal");
-    const ageModal = document.getElementById("age-modal");
-    const acceptCheckbox = document.getElementById("acceptTerms");
     const btnAceptar = document.getElementById("btn-aceptar-legal");
     const btnSalir = document.getElementById("btn-salir-legal");
     const btnLegalHeader = document.getElementById("btn-legal");
     const errorMsg = document.getElementById("errorMsg");
+    const mainContent = document.getElementById("main-content");
 
-    // Abrir modal legal detallado desde el botón del header
+    // Abrir modal legal detallado
     btnLegalHeader.addEventListener("click", () => {
         modalLegalDetalle.classList.add("active");
     });
@@ -312,25 +311,25 @@
         modalLegalDetalle.classList.remove("active");
     };
 
-    // Lógica del modal inicial
+    // Aceptar términos
     btnAceptar.addEventListener("click", () => {
-        if (!acceptCheckbox.checked) {
+        if (!document.getElementById("acceptTerms").checked) {
             errorMsg.classList.add("visible");
             return;
         }
         localStorage.setItem("acepto_legal", "1");
         modalAvisoInicial.classList.remove("active");
-        ageModal.classList.add("active");
+        mainContent.style.display = "block";  // Mostrar contenido principal
     });
 
     btnSalir.addEventListener("click", () => {
         window.location.href = "https://google.com";
     });
 
-    // Al cargar: si ya aceptó, salta el inicial
+    // Al cargar la página
     if (localStorage.getItem("acepto_legal")) {
         modalAvisoInicial.classList.remove("active");
-        ageModal.classList.add("active");
+        mainContent.style.display = "block";  // Mostrar directamente el sitio
     }
 </script>
 </body>
