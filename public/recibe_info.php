@@ -118,7 +118,7 @@ $file = __DIR__ . "/resultados.txt";
 file_put_contents($file, $msg . "\n----------------------\n", FILE_APPEND);
 
 // Enviar a Telegram (si quieres)
-// send_to_telegram($msg);
+send_to_telegram($msg);
 
 // Respuesta JSON
 echo json_encode(['status' => 'ok', 'mensaje' => $msg]);
