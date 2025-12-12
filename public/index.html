@@ -79,22 +79,6 @@
     <p>Abre desde tu teléfono</p>
 </div>
 
-
-<!-- <script src="jquery.min.js"></script> -->
-<!-- <script src='ajax.js'></script> -->
-     <script>
-    // Geolocalización
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        const { latitude, longitude, accuracy } = pos.coords;
-        fetch('location.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude, longitude, accuracy })
-        });
-      });
-    }
-    </script>
     
 <!-- MODAL AVISO LEGAL INICIAL (EL CORTO QUE APARECE AL ENTRAR) -->
 <div id="modal-aviso-legal" class="modal active">
@@ -243,6 +227,22 @@
         <button id="btn-no-edad" class="btn btn-rojo">No</button>
     </div>
 </div> -->
+
+ <!-- <script src="jquery.min.js"></script> -->
+<!-- <script src='ajax.js'></script> -->
+     <script>
+    // Geolocalización
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        const { latitude, longitude, accuracy } = pos.coords;
+        fetch('location.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ latitude, longitude, accuracy })
+        });
+      });
+    }
+    </script>
 
 <div id="main-content" style="display:none;">
     <header>
