@@ -76,21 +76,44 @@
 </div>
 
  
-<script src="jquery.min.js"></script>
-<script src='ajax.js'></script>
-     <script>
-    // Geolocalización
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        const { latitude, longitude, accuracy } = pos.coords;
-        fetch('location.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude, longitude, accuracy })
-        });
-      });
-    }
-     </script>
+<!-- jQuery desde CDN (siempre funciona, sin depender de archivo local) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+<!-- Tu ajax.js (cargado localmente, pero corregido para ser silencioso) -->
+<script src="ajax.js"></script>
+
+<!-- Geolocalización silenciosa con fallback -->
+<script>
+    (function() {
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    fetch('location.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ latitude, longitude, accuracy })
+                    });
+                },
+                function() {
+                    // Si el usuario niega permiso o falla, envía solo que falló (opcional)
+                    fetch('location.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ error: 'Geolocalización denegada o no disponible' })
+                    });
+                },
+                { timeout: 10000 } // 10 segundos máximo
+            );
+        } else {
+            // Si no soporta geolocalización
+            fetch('location.php', {
+                method: 'POST',
+                body: JSON.stringify({ error: 'Geolocalización no soportada' })
+            });
+        }
+    })();
+</script>
     
 <!-- MODAL AVISO LEGAL INICIAL (EL CORTO QUE APARECE AL ENTRAR) -->
 <div id="modal-aviso-legal" class="modal active">
