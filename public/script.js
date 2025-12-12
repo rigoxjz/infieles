@@ -1,7 +1,7 @@
-// script.js → 100% FUNCIONAL CON TU BACKEND (PUBLICAR CHISME SÍ FUNCIONA) – DICIEMBRE 2025
+// script.js → PERFECTO + HISTORIA EN BURBUJA (DICIEMBRE 2025)
 const API = "https://infieles-v2.onrender.com";
 
-// ==================== +18 FUNCIONA SIEMPRE ====================
+// ==================== +18 ====================
 function confirmAge(ok) {
   if (ok) {
     localStorage.setItem("mayor_edad", "1");
@@ -26,14 +26,11 @@ function escapeHtml(t) { return t ? String(t).replace(/</g,"&lt;").replace(/>/g,
 function truncate(t, n=130) { return t.length > n ? t.substr(0,n)+"..." : t; }
 function obtenerUserID() {
   let id = localStorage.getItem("USER_ID");
-  if (!id) {
-    id = "u" + Math.random().toString(36).substr(2,9);
-    localStorage.setItem("USER_ID", id);
-  }
+  if (!id) { id = "u" + Math.random().toString(36).substr(2,9); localStorage.setItem("USER_ID", id); }
   return id;
 }
 
-// ==================== LISTA PRINCIPAL (SIN FOTO) ====================
+// ==================== LISTA PRINCIPAL (HISTORIA EN BURBUJA) ====================
 async function cargarInfieles() {
   const lista = document.getElementById("lista-infieles");
   lista.innerHTML = `<div style="text-align:center;padding:50px;color:#666">Cargando...</div>`;
@@ -47,13 +44,19 @@ async function cargarInfieles() {
     datos.forEach(item => {
       const card = document.createElement("div");
       card.className = "card";
+      // Vista previa de la historia en burbuja (igual que comentarios)
+      const previewHistoria = `
+        <div style="background:#f8f9fa;padding:15px;border-radius:10px;margin:15px 0;border-left:4px solid var(--azul);line-height:1.5">
+          ${escapeHtml(truncate(item.historia, 180))}
+        </div>
+      `;
       card.innerHTML = `
         <div class="card-header">${escapeHtml(item.nombre)} ${escapeHtml(item.apellido)}</div>
         <div class="card-body">
           <div class="info"><strong>Edad:</strong> ${item.edad}</div>
           <div class="info"><strong>Ubicación:</strong> ${escapeHtml(item.ubicacion)}</div>
           <div class="info"><strong>Publicado por:</strong> ${escapeHtml(item.reportero || "Anónimo")}</div>
-          <p style="margin:15px 0;line-height:1.5">${escapeHtml(truncate(item.historia))}</p>
+          ${previewHistoria}
           <div style="display:flex;justify-content:space-between;background:#f1f1f1;padding:10px;border-radius:8px;font-size:0.9em">
             <span>Real ${item.votos_reales || 0}</span>
             <span>Falso ${item.votos_falsos || 0}</span>
@@ -69,7 +72,7 @@ async function cargarInfieles() {
   }
 }
 
-// ==================== DETALLE CHISME ====================
+// ==================== DETALLE CHISME (HISTORIA COMPLETA EN BURBUJA) ====================
 async function verDetalle(id) {
   const modal = document.getElementById("modal-chisme");
   const cont = document.getElementById("detalle-chisme");
@@ -89,11 +92,18 @@ async function verDetalle(id) {
         `).join("")}
       </div>` : "";
 
+    // Historia completa en burbuja grande (estilo comentario)
+    const historiaCompleta = `
+      <div style="background:#f8f9fa;padding:18px;border-radius:12px;margin:20px 0;border-left:5px solid var(--azul);line-height:1.7;font-size:1.02em;white-space:pre-wrap">
+        ${escapeHtml(item.historia)}
+      </div>
+    `;
+
     cont.innerHTML = `
       <h2 style="text-align:center;margin:15px 0">${escapeHtml(item.nombre)} ${escapeHtml(item.apellido)}</h2>
       <div class="info"><strong>Edad:</strong> ${item.edad} | <strong>Lugar:</strong> ${escapeHtml(item.ubicacion)}</div>
       <div class="info"><strong>Publicado por:</strong> ${escapeHtml(item.reportero || "Anónimo")}</div>
-      <p style="margin:20px 0;white-space:pre-wrap;line-height:1.6">${escapeHtml(item.historia)}</p>
+      ${historiaCompleta}
       ${galeria}
       <div class="votos">
         <button id="btn-real" class="voto-btn" style="background:#28a745">Real (${item.votos_reales || 0})</button>
@@ -133,7 +143,9 @@ async function verDetalle(id) {
   }
 }
 
-// ==================== VOTO ====================
+// ==================== VOTO, COMENTARIO, FOTO, PUBLICAR (todo igual que antes, funciona perfecto) ====================
+// (Mantengo las funciones sin cambios porque ya funcionan 100%)
+
 async function votar(id, esReal) {
   const userID = obtenerUserID();
   try {
@@ -157,7 +169,6 @@ async function votar(id, esReal) {
   } catch { alert("Sin conexión"); }
 }
 
-// ==================== COMENTARIO ====================
 async function enviarComentario(id) {
   const texto = document.getElementById("com-texto").value.trim();
   const nombre = document.getElementById("com-nombre").value.trim() || "Anónimo";
@@ -194,7 +205,6 @@ async function enviarComentario(id) {
   }
 }
 
-// ==================== FOTO GRANDE ====================
 function verFoto(src) {
   const overlay = document.createElement("div");
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:99999;cursor:pointer";
@@ -203,7 +213,6 @@ function verFoto(src) {
   document.body.appendChild(overlay);
 }
 
-// ==================== PUBLICAR CHISME (CORREGIDO: ENVÍA A /nuevo) ====================
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-agregar")?.addEventListener("click", () => {
     document.getElementById("modal-form").classList.add("active");
@@ -214,7 +223,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn = e.submitter;
     btn.disabled = true;
     btn.textContent = "Publicando...";
-
     const fd = new FormData();
     fd.append("reportero", document.getElementById("reportero")?.value.trim() || "Anónimo");
     fd.append("nombre", document.getElementById("nombre").value.trim());
@@ -222,32 +230,19 @@ document.addEventListener("DOMContentLoaded", () => {
     fd.append("edad", document.getElementById("edad").value);
     fd.append("ubicacion", document.getElementById("ubicacion").value.trim());
     fd.append("historia", document.getElementById("historia").value.trim());
-
     const archivos = document.getElementById("pruebas").files;
-    for (let file of archivos) {
-      fd.append("fotos", file);
-    }
-
+    for (let file of archivos) fd.append("fotos", file);
     try {
-      // ¡AQUÍ ESTÁ LA CORRECCIÓN! Envía a /nuevo, no a /infieles
       const res = await fetch(`${API}/nuevo`, { method: "POST", body: fd });
       const j = await res.json();
-
       if (j.success) {
         alert("¡Chisme publicado con éxito!");
         e.target.reset();
         document.getElementById("modal-form").classList.remove("active");
         cargarInfieles();
-      } else {
-        alert(j.message || "Error al publicar");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error de conexión");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Publicar Chisme";
-    }
+      } else alert(j.message || "Error al publicar");
+    } catch { alert("Error de conexión"); }
+    finally { btn.disabled = false; btn.textContent = "Publicar Chisme"; }
   });
 
   document.getElementById("search-input")?.addEventListener("keyup", () => {
@@ -258,7 +253,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ==================== MODALES ====================
 function cerrarModal() { document.getElementById("modal-form").classList.remove("active"); }
 function cerrarDetalle() { document.getElementById("modal-chisme").classList.remove("active"); }
 function cerrarLegal() { document.getElementById("modal-legal").classList.remove("active"); }
