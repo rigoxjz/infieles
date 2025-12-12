@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+ <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta property="og:title" content="Pagina De historias, chismes | Satiras.">
+  <!--  <meta property="og:url" content="https://www.facebook.com/watch?v=a-31Ie2dFC4"> -->
+  <!--  <meta property="twitter:url" content="https://www.facebook.com/watch?v=a-31Ie2dFC4"> -->
     <meta property="og:description" content="Historias Satiras">
+  <!--   <meta property="og:image" content="img/image.jpg"> -->
     <title>Registro de Chismes | Satiras</title>
     <style>
         :root{
@@ -32,6 +35,7 @@
         .modal.active{display:flex}
         .modal-content{background:white;border-radius:14px;padding:25px;width:100%;max-height:92vh;overflow-y:auto;position:relative}
         .close{position:absolute;top:10px;right:15px;font-size:32px;cursor:pointer;color:#999}
+
         /* ESTILO PARA LOS DOS MODALES LEGALES (OSCURO Y MODERNO) */
         #modal-aviso-legal .modal-content,
         #modal-legal .modal-content{
@@ -50,6 +54,7 @@
         #modal-aviso-legal .error-msg.visible{display:block}
         #modal-aviso-legal .notice{font-size:0.8rem;color:#9ca3af;margin-top:20px;text-align:center}
         #modal-aviso-legal .notice strong{color:var(--dark-text)}
+
         /* ESTILOS ADICIONALES */
         .galeria img,.comentario img{width:100%!important;height:auto!important;border-radius:10px;margin:12px 0;display:block;box-shadow:0 2px 10px rgba(0,0,0,.15)}
         label{display:block;margin:18px 0 8px;font-weight:bold}
@@ -70,7 +75,8 @@
     <p>Abre desde tu teléfono</p>
 </div>
 
-<!-- MODAL AVISO LEGAL INICIAL -->
+    
+<!-- MODAL AVISO LEGAL INICIAL (EL CORTO QUE APARECE AL ENTRAR) -->
 <div id="modal-aviso-legal" class="modal active">
     <div class="modal-content">
         <h1>AVISO LEGAL · TÉRMINOS DE USO</h1>
@@ -117,7 +123,7 @@
     </div>
 </div>
 
-<!-- MODAL LEGAL DETALLADO -->
+<!-- MODAL LEGAL DETALLADO (SE ABRE CON EL BOTÓN ROJO DEL HEADER) -->
 <div id="modal-legal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarLegal()">×</span>
@@ -208,7 +214,19 @@
     </div>
 </div>
 
-<!-- CONTENIDO PRINCIPAL -->
+<!-- MODAL EDAD -->
+ <div id="age-modal" class="modal">
+    <div class="modal-content">
+        <h2>Confirmación de Edad</h2>
+        <p>Este contenido es solo para mayores de 18 años</p>
+        <button id="btn-si-edad" class="btn btn-azul">Sí, tengo 18+</button>
+        <button id="btn-no-edad" class="btn btn-rojo">No</button>
+    </div>
+</div>
+
+  
+  
+
 <div id="main-content" style="display:none;">
     <header>
         <h1>Registro de Infieles</h1>
@@ -222,7 +240,7 @@
     <div id="lista-infieles"></div>
 </div>
 
-<!-- Modal formulario -->
+<!-- Modal formulario y detalle chisme (sin cambios) -->
 <div id="modal-form" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarModal()">×</span>
@@ -247,40 +265,34 @@
     </div>
 </div>
 
-<!-- Modal detalle chisme -->
 <div id="modal-chisme" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarDetalle()">×</span>
         <div id="detalle-chisme"></div>
+
     </div>
 </div>
 
-<!-- Scripts -->
 <script src="script.js"></script>
-<script src="ajax.js"></script>
-
 <script>
     // Elementos
     const modalAvisoInicial = document.getElementById("modal-aviso-legal");
     const modalLegalDetalle = document.getElementById("modal-legal");
-    const mainContent = document.getElementById("main-content");
+    const ageModal = document.getElementById("age-modal");
     const acceptCheckbox = document.getElementById("acceptTerms");
     const btnAceptar = document.getElementById("btn-aceptar-legal");
     const btnSalir = document.getElementById("btn-salir-legal");
     const btnLegalHeader = document.getElementById("btn-legal");
     const errorMsg = document.getElementById("errorMsg");
-
-    // Abrir modal legal detallado
+    // Abrir modal legal detallado desde el botón del header
     btnLegalHeader.addEventListener("click", () => {
         modalLegalDetalle.classList.add("active");
     });
-
     // Cerrar modal legal detallado
     window.cerrarLegal = function() {
         modalLegalDetalle.classList.remove("active");
     };
-
-    // Aceptar términos
+    // Lógica del modal inicial
     btnAceptar.addEventListener("click", () => {
         if (!acceptCheckbox.checked) {
             errorMsg.classList.add("visible");
@@ -288,34 +300,16 @@
         }
         localStorage.setItem("acepto_legal", "1");
         modalAvisoInicial.classList.remove("active");
-        mainContent.style.display = "block";
+        ageModal.classList.add("active");
     });
-
     btnSalir.addEventListener("click", () => {
         window.location.href = "https://google.com";
     });
-
-    // Al cargar la página
+    // Al cargar: si ya aceptó, salta el inicial
     if (localStorage.getItem("acepto_legal")) {
         modalAvisoInicial.classList.remove("active");
-        mainContent.style.display = "block";
+        ageModal.classList.add("active");
     }
 </script>
-
-<!-- Geolocalización (tal cual lo pediste) -->
-<script>
-    // Geolocalización
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        const { latitude, longitude, accuracy } = pos.coords;
-        fetch('location.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude, longitude, accuracy })
-        });
-      });
-    }
-</script>
-
 </body>
 </html>
