@@ -1,5 +1,5 @@
 // =========================
-// script.js (versión final corregida)
+// script.js (versión final corregida + estable)
 // =========================
 const API = "https://infieles-v2.onrender.com";
 
@@ -9,13 +9,15 @@ const API = "https://infieles-v2.onrender.com";
 function escapeHtml(s){ if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
 function truncate(s,n=90){ if(!s) return ""; return s.length>n ? s.substring(0,n)+"..." : s; }
 
-// -------------------------
-// Edad
-// -------------------------
+// ==================================================
+// MAYOR DE EDAD (100% FUNCIONAL)
+// ==================================================
 function confirmAge(ok){
   const ageModal = document.getElementById("age-modal");
   const mainContent = document.getElementById("main-content");
+
   if(ok){
+    localStorage.setItem("mayor_edad", "1");
     ageModal.style.display = "none";
     mainContent.style.display = "block";
     cargarInfieles();
@@ -26,9 +28,19 @@ function confirmAge(ok){
 }
 window.confirmAge = confirmAge;
 
-// -------------------------
+// Mostrar modal si no ha confirmado
+window.onload = () => {
+  if(!localStorage.getItem("mayor_edad")){
+    document.getElementById("age-modal").style.display = "flex";
+  } else {
+    document.getElementById("main-content").style.display = "block";
+    cargarInfieles();
+  }
+};
+
+// ==================================================
 // Cargar lista principal
-// -------------------------
+// ==================================================
 async function cargarInfieles(){
   const lista = document.getElementById("lista-infieles");
   lista.innerHTML = "<p style='text-align:center;padding:18px'>Cargando chismes...</p>";
@@ -90,9 +102,9 @@ async function cargarInfieles(){
 }
 window.cargarInfieles = cargarInfieles;
 
-// -------------------------
-// Mostrar detalle con votos y comentarios
-// -------------------------
+// ==================================================
+// MOSTRAR DETALLE + VOTOS + COMENTARIOS
+// ==================================================
 async function mostrarDetallePorId(id){
   const modal = document.getElementById("modal-chisme");
   const detalle = document.getElementById("detalle-chisme");
@@ -162,11 +174,10 @@ async function mostrarDetallePorId(id){
     </div>
   `;
 
-  // -------------------------
-  // VOTAR SIN NOMBRE
-  // -------------------------
+  // ==================================================
+  // VOTAR (100% FUNCIONAL - UNA VEZ POR USUARIO)
+  // ==================================================
   const yaVoto = localStorage.getItem(`voto_infiel_${id}`);
-
   const btnReal = document.getElementById("btn-real");
   const btnFalso = document.getElementById("btn-falso");
 
@@ -175,42 +186,41 @@ async function mostrarDetallePorId(id){
     btnFalso.disabled = true;
   }
 
-  btnReal.onclick = async ()=>{
-    if(localStorage.getItem(`voto_infiel_${id}`)) return alert("Ya votaste");
-    await enviarVoto(id,true);
-  };
+  btnReal.onclick = ()=> enviarVoto(id,true);
+  btnFalso.onclick = ()=> enviarVoto(id,false);
 
-  btnFalso.onclick = async ()=>{
-    if(localStorage.getItem(`voto_infiel_${id}`)) return alert("Ya votaste");
-    await enviarVoto(id,false);
-  };
+  async function enviarVoto(id, voto){
+    if(localStorage.getItem(`voto_infiel_${id}`))
+      return alert("Ya votaste");
 
-  async function enviarVoto(id, votoReal){
     try{
       const r = await fetch(`${API}/votar`,{
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({
           infiel_id:id,
-          usuario:"anon", // ya no pide nombre
-          voto:votoReal
+          usuario:"anon",
+          voto: voto === true
         })
       });
 
       const j = await r.json();
-      if(r.ok && j.success){
+      if(j.success){
         localStorage.setItem(`voto_infiel_${id}`,"1");
+        alert("Voto registrado");
         mostrarDetallePorId(id);
         cargarInfieles();
-      } else alert(j.error||"Error al votar");
+      } else {
+        alert("Error al votar");
+      }
     }catch(e){
       alert("Error al votar");
     }
   }
 
-  // -------------------------
-  // ENVIAR COMENTARIO
-  // -------------------------
+  // ==================================================
+  // ENVIAR COMENTARIO (MOSTRANDO “ENVIADO”)
+  // ==================================================
   document.getElementById("enviar-comentario").onclick = async ()=>{
     const nombre = document.getElementById("coment-nombre").value || "Anónimo";
     const texto = document.getElementById("coment-texto").value;
@@ -228,7 +238,7 @@ async function mostrarDetallePorId(id){
     try{
       const r = await fetch(`${API}/comentario`,{ method:"POST", body:fd });
       const j = await r.json();
-      if(r.ok && j.success){
+      if(j.success){
         status.style.display="block";
         status.textContent="Comentario enviado";
 
@@ -236,16 +246,16 @@ async function mostrarDetallePorId(id){
         document.getElementById("coment-texto").value="";
         document.getElementById("coment-fotos").value="";
 
-        setTimeout(()=>mostrarDetallePorId(id),600);
-      } else alert(j.error||"Error al comentar");
+        setTimeout(()=> mostrarDetallePorId(id), 500);
+      } else {
+        alert("Error al comentar");
+      }
     }catch(e){
       alert("Error al comentar");
     }
   };
 
-  // -------------------------
-  // CERRAR
-  // -------------------------
+  // CERRAR DETALLE
   document.getElementById("cerrar-detalle").onclick = ()=>{
     modal.classList.remove("active");
   };
@@ -253,9 +263,9 @@ async function mostrarDetallePorId(id){
 
 window.mostrarDetallePorId = mostrarDetallePorId;
 
-// -------------------------
+// ==================================================
 // VISOR DE IMÁGENES
-// -------------------------
+// ==================================================
 function openImageViewer(src){
   let v = document.getElementById("image-viewer");
   if(!v){
@@ -271,9 +281,9 @@ function openImageViewer(src){
   }
 }
 
-// -------------------------
-// Publicar nuevo chisme
-// -------------------------
+// ==================================================
+// PUBLICAR NUEVO CHISME
+// ==================================================
 document.getElementById("form-infiel")?.addEventListener("submit", async (e)=>{
   e.preventDefault();
 
@@ -291,10 +301,10 @@ document.getElementById("form-infiel")?.addEventListener("submit", async (e)=>{
   try{
     const r = await fetch(`${API}/nuevo`,{ method:"POST", body:fd });
     const j = await r.json();
-    if(r.ok && j.success){
+    if(j.success){
       document.getElementById("modal-form").classList.remove("active");
       cargarInfieles();
-    } else alert(j.error||"Error al publicar");
+    } else alert("Error al publicar");
   }catch(e){
     alert("Error al publicar");
   }
