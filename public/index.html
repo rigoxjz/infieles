@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro Nacional de Infieles</title>
     <style>
-        :root{--azul:#007bff;--rojo:#dc3545;--naranja:#fd7e14;--fondo:#f8f9fa;--blanco:#fff;--gris:#6c757d;--texto:#212529}
+        :root{
+            --azul:#007bff;--rojo:#dc3545;--naranja:#fd7e14;--fondo:#f8f9fa;--blanco:#fff;--gris:#6c757d;--texto:#212529;
+            --dark-bg:#0f172a;--dark-text:#e5e7eb;--dark-muted:#cbd5f5;--dark-highlight:#fbbf24;--dark-danger:#f97373;
+        }
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:system-ui,Arial,sans-serif;background:var(--fondo);color:var(--texto);max-width:500px;margin:0 auto;min-height:100vh}
         #solo-pc{display:none;text-align:center;padding:60px;background:#fff;min-height:100vh;font-size:1.3em}
@@ -38,7 +41,7 @@
         .importante{color:var(--naranja);font-weight:bold}
         .rojo{color:var(--rojo);font-weight:bold}
 
-          /* ESTILO ESPECIAL PARA EL MODAL LEGAL (OSCURO Y MODERNO) */
+        /* ESTILO ESPECIAL PARA EL MODAL LEGAL (OSCURO Y MODERNO) */
         #modal-aviso-legal .modal-content{
             background:var(--dark-bg);color:var(--dark-text);border:1px solid rgba(148,163,184,0.3);box-shadow:0 20px 40px rgba(15,23,42,0.7);
         }
@@ -64,7 +67,6 @@
     <p>Abre desde tu teléfono</p>
 </div>
 
-<!-- NUEVO MODAL DE AVISO LEGAL (OBLIGATORIO AL ENTRAR) -->
 <!-- MODAL AVISO LEGAL (PRIMERO AL ENTRAR) -->
 <div id="modal-aviso-legal" class="modal active">
     <div class="modal-content">
@@ -91,14 +93,14 @@
             <p>El titular no se responsabiliza por la veracidad del contenido ni por daños derivados de su uso. Se reserva el derecho de eliminar contenidos inapropiados.</p>
             <p class="danger">Está estrictamente prohibido usar la plataforma para acosar, difamar o dañar a terceros.</p>
 
-           <!-- <h2>4. Solicitudes de retiro</h2> -->
-           <!-- <p>Si crees que tu información fue publicada sin consentimiento, envía tu solicitud a <strong style="color:#fff">registroinfieles@gmail.com</strong> con detalles para revisión.</p> -->
+            <h2>4. Solicitudes de retiro</h2>
+            <p>Si crees que tu información fue publicada sin consentimiento, envía tu solicitud a <strong style="color:#fff">registroinfieles@gmail.com</strong> con detalles para revisión.</p>
 
-            <h2>4. Uso adecuado</h2>
+            <h2>5. Uso adecuado</h2>
             <p class="danger">El usuario se compromete a respetar la dignidad de las personas y no usar la plataforma para venganza o acoso.</p>
 
-            <h2>5. No asesoría legal</h2>
-            <p>El contenido es general y no constituye asesoría legal.</p>
+            <h2>6. No asesoría legal</h2>
+            <p>El contenido es general y <span class="highlight">no constituye asesoría legal</span>.</p>
 
             <div style="background:rgba(30,41,59,0.8);padding:20px;border-radius:12px;margin:30px 0;border-left:5px solid var(--dark-danger)">
                 <p style="color:#fff;font-size:1.1em;font-weight:600">
@@ -124,8 +126,6 @@
     </div>
 </div>
 
-
-
 <!-- MODAL EDAD -->
 <div id="age-modal" class="modal">
     <div class="modal-content">
@@ -136,6 +136,7 @@
     </div>
 </div>
 
+<!-- CONTENIDO PRINCIPAL -->
 <div id="main-content" style="display:none;">
     <header>
         <h1>Registro de Infieles</h1>
@@ -144,12 +145,12 @@
         <button class="btn btn-rojo" id="btn-legal">Información Legal Importante</button>
     </header>
     <section id="search-section">
-        <input type="text" id="search-input" placeholder="Buscar por nombre o ciudad..." onkeyup="filtrar()">
+        <input type="text" id="search-input" placeholder="Buscar por nombre o ciudad...">
     </section>
     <div id="lista-infieles"></div>
 </div>
 
-<!-- Modal Formulario -->
+<!-- MODAL FORMULARIO -->
 <div id="modal-form" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarModal()">×</span>
@@ -174,7 +175,7 @@
     </div>
 </div>
 
-<!-- Modal Detalle -->
+<!-- MODAL DETALLE -->
 <div id="modal-chisme" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarDetalle()">×</span>
@@ -182,7 +183,7 @@
     </div>
 </div>
 
-<!-- Modal Legal -->
+<!-- MODAL LEGAL BREVE -->
 <div id="modal-legal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarLegal()">×</span>
@@ -195,10 +196,10 @@
     </div>
 </div>
 
-<!-- SCRIPT EXTERNO -->
 <script src="script.js"></script>
+
+<!-- CONTROL DEL MODAL LEGAL -->
 <script>
-    // Control del modal legal con checkbox obligatorio
     const acceptCheckbox = document.getElementById("acceptTerms");
     const btnAceptar = document.getElementById("btn-aceptar-legal");
     const btnSalir = document.getElementById("btn-salir-legal");
@@ -218,7 +219,6 @@
         window.location.href = "https://google.com";
     });
 
-    // Si ya aceptó, salta al modal de edad
     if (localStorage.getItem("acepto_legal")) {
         document.getElementById("modal-aviso-legal").classList.remove("active");
         document.getElementById("age-modal").classList.add("active");
