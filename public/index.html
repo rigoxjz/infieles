@@ -42,43 +42,39 @@
         #modal-aviso-legal li{font-size:0.95rem;color:var(--dark-muted);margin:4px 0}
         #modal-aviso-legal .highlight{color:var(--dark-highlight);font-weight:600}
         #modal-aviso-legal .danger{color:var(--dark-danger);font-weight:600}
-        #modal-aviso-legal .checkbox-area{display:flex;align-items:flex-start;gap:12px;margin:20px 0}
-        #modal-aviso-legal .checkbox-area input{margin-top:4px}
-        #modal-aviso-legal .error-msg{color:#fecaca;font-size:0.9rem;margin-top:8px;display:none}
+        /* Checkbox centrado correctamente */
+        #modal-aviso-legal .checkbox-area{
+            display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0;
+            text-align:left;flex-wrap:wrap;
+        }
+        #modal-aviso-legal .checkbox-area input{margin:0}
+        #modal-aviso-legal .error-msg{color:#fecaca;font-size:0.9rem;margin-top:8px;display:none;text-align:center;width:100%}
         #modal-aviso-legal .error-msg.visible{display:block}
-        #modal-aviso-legal .notice{font-size:0.8rem;color:#9ca3af;margin-top:20px}
+        #modal-aviso-legal .notice{font-size:0.8rem;color:#9ca3af;margin-top:20px;text-align:center}
         #modal-aviso-legal .notice strong{color:var(--dark-text)}
 
-        /* ESTILOS ADICIONALES PARA GALERÍA, COMENTARIOS, VOTOS, ETC. */
-        .galeria img,.comentario img{
-            width:100%!important;height:auto!important;border-radius:10px;margin:12px 0;display:block;
-            box-shadow:0 2px 10px rgba(0,0,0,.15)
-        }
+        /* ESTILOS ADICIONALES */
+        .galeria img,.comentario img{width:100%!important;height:auto!important;border-radius:10px;margin:12px 0;display:block;box-shadow:0 2px 10px rgba(0,0,0,.15)}
         label{display:block;margin:18px 0 8px;font-weight:bold}
-        input,textarea{
-            width:100%;padding:14px;border:1.5px solid #ddd;border-radius:10px;font-size:1em
-        }
+        input,textarea{width:100%;padding:14px;border:1.5px solid #ddd;border-radius:10px;font-size:1em}
         textarea{min-height:120px}
         .votos{display:flex;gap:10px;margin:25px 0}
         .voto-btn{flex:1;padding:14px;border-radius:10px;color:white;border:none;font-weight:bold}
         .comentarios{margin-top:30px;border-top:2px solid #eee;padding-top:20px}
-        .comentario{
-            background:#f8f9fa;padding:15px;border-radius:10px;margin:15px 0;
-            border-left:4px solid var(--azul)
-        }
+        .comentario{background:#f8f9fa;padding:15px;border-radius:10px;margin:15px 0;border-left:4px solid var(--azul)}
         .importante{color:var(--naranja);font-weight:bold}
         .rojo{color:var(--rojo);font-weight:bold}
     </style>
 </head>
 <body>
 
-    
 <div id="solo-pc">
     <h2>Este sitio es solo para celulares</h2>
     <p>Abre desde tu teléfono</p>
 </div>
-<!-- MODAL AVISO LEGAL (PRIMERO AL ENTRAR) -->
-<div id="modal-aviso-legal" class="modal active">
+
+<!-- MODAL AVISO LEGAL -->
+<div id="modal-aviso-legal" class="modal">
     <div class="modal-content">
         <h1>AVISO LEGAL · TÉRMINOS DE USO</h1>
         <div style="margin-top:20px;max-height:65vh;overflow-y:auto">
@@ -99,8 +95,6 @@
             <h2>3. Limitación de responsabilidad del titular</h2>
             <p>El titular no se responsabiliza por la veracidad del contenido ni por daños derivados de su uso. Se reserva el derecho de eliminar contenidos inapropiados.</p>
             <p class="danger">Está estrictamente prohibido usar la plataforma para acosar, difamar o dañar a terceros.</p>
-           <!-- <h2>4. Solicitudes de retiro</h2> -->
-           <!-- <p>Si crees que tu información fue publicada sin consentimiento, envía tu solicitud a <strong style="color:#fff">registroinfieles@gmail.com</strong> con detalles para revisión.</p> -->
             <h2>4. Uso adecuado</h2>
             <p class="danger">El usuario se compromete a respetar la dignidad de las personas y no usar la plataforma para venganza o acoso.</p>
             <h2>5. No asesoría legal</h2>
@@ -125,6 +119,7 @@
         </p>
     </div>
 </div>
+
 <!-- MODAL EDAD -->
 <div id="age-modal" class="modal">
     <div class="modal-content">
@@ -134,6 +129,7 @@
         <button id="btn-no-edad" class="btn btn-rojo">No</button>
     </div>
 </div>
+
 <div id="main-content" style="display:none;">
     <header>
         <h1>Registro de Infieles</h1>
@@ -146,7 +142,8 @@
     </section>
     <div id="lista-infieles"></div>
 </div>
-<!-- Tus otros modales (form, chisme, legal) quedan igual -->
+
+<!-- Modal formulario -->
 <div id="modal-form" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarModal()">×</span>
@@ -170,36 +167,57 @@
         </form>
     </div>
 </div>
+
+<!-- Modal detalle chisme -->
 <div id="modal-chisme" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarDetalle()">×</span>
         <div id="detalle-chisme"></div>
     </div>
 </div>
+
 <script src="script.js"></script>
 <script>
-    // Control del modal legal con checkbox obligatorio
+    // Elementos
+    const modalLegal = document.getElementById("modal-aviso-legal");
+    const ageModal = document.getElementById("age-modal");
+    const mainContent = document.getElementById("main-content");
     const acceptCheckbox = document.getElementById("acceptTerms");
     const btnAceptar = document.getElementById("btn-aceptar-legal");
     const btnSalir = document.getElementById("btn-salir-legal");
+    const btnLegal = document.getElementById("btn-legal");
     const errorMsg = document.getElementById("errorMsg");
+
+    // Abrir modal legal desde el botón del header
+    btnLegal.addEventListener("click", () => {
+        modalLegal.classList.add("active");
+    });
+
+    // Aceptar términos
     btnAceptar.addEventListener("click", () => {
         if (!acceptCheckbox.checked) {
             errorMsg.classList.add("visible");
             return;
         }
         localStorage.setItem("acepto_legal", "1");
-        document.getElementById("modal-aviso-legal").classList.remove("active");
-        document.getElementById("age-modal").classList.add("active");
+        modalLegal.classList.remove("active");
+        ageModal.classList.add("active");
     });
+
+    // Salir
     btnSalir.addEventListener("click", () => {
         window.location.href = "https://google.com";
     });
-    // Si ya aceptó, salta al modal de edad
+
+    // Al cargar la página
     if (localStorage.getItem("acepto_legal")) {
-        document.getElementById("modal-aviso-legal").classList.remove("active");
-        document.getElementById("age-modal").classList.add("active");
+        modalLegal.classList.remove("active");
+        ageModal.classList.add("active");  // o mostrar main-content si ya pasó edad también
+    } else {
+        modalLegal.classList.add("active");
     }
+
+    // Aquí puedes agregar más lógica para el modal de edad, etc.
 </script>
 </body>
 </html>
