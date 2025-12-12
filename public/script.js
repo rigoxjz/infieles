@@ -1,5 +1,5 @@
-// script.js → TODO FUNCIONA: +18, VOTOS, COMENTARIOS, Y AHORA SÍ PUBLICA EL CHISME
-const API = "https://infieles-v2.onrender.com";
+// script.js → TODO FUNCIONA: PUBLICAR CHISME FIJO (2025)
+const API = "https://infieles-back.onrender.com";  // ← ESTA ES LA BUENA
 
 // ==================== +18 ====================
 function confirmAge(ok) {
@@ -29,8 +29,7 @@ function obtenerUserID() {
   return id;
 }
 
-// ==================== LISTA + DETALLE (igual que antes, funciona perfecto) ====================
-// (mantengo todo lo que ya tenías funcionando: sin foto en lista, miniaturas, voto único, comentario sin recarga)
+// ==================== LISTA ====================
 async function cargarInfieles() {
   const lista = document.getElementById("lista-infieles");
   lista.innerHTML = `<div style="text-align:center;padding:50px;color:#666">Cargando...</div>`;
@@ -57,7 +56,7 @@ async function cargarInfieles() {
         <div style="display:flex;justify-content:space-between;background:#f1f1f1;padding:10px;border-radius:8px;font-size:0.9em">
           <span>Real ${item.votos_reales || 0}</span>
           <span>Falso ${item.votos_falsos || 0}</span>
-          <span> ${item.comentarios?.length || 0}</span>
+          <span>Comentarios ${item.comentarios?.length || 0}</span>
         </div>
         <button class="btn btn-azul" onclick="verDetalle(${item.id})" style="margin-top:15px;width:100%">Ver chisme completo</button>
       </div>
@@ -66,9 +65,7 @@ async function cargarInfieles() {
   });
 }
 
-// (verDetalle, votar, enviarComentario, verFoto... todo igual que el anterior, funciona perfecto)
-// → Los copio tal cual para que no se pierda nada
-
+// ==================== DETALLE ====================
 async function verDetalle(id) {
   const modal = document.getElementById("modal-chisme");
   const cont = document.getElementById("detalle-chisme");
@@ -130,6 +127,7 @@ async function verDetalle(id) {
   document.getElementById("btn-enviar-com").onclick = () => enviarComentario(id);
 }
 
+// ==================== VOTO Y COMENTARIO (igual que antes) ====================
 async function votar(id, esReal) {
   const userID = obtenerUserID();
   try {
@@ -195,13 +193,12 @@ function verFoto(src) {
   document.body.appendChild(overlay);
 }
 
-// ==================== PUBLICAR CHISME (ARREGLADO 100%) ====================
+// ==================== PUBLICAR CHISME (FIJO) ====================
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-agregar")?.addEventListener("click", () => {
     document.getElementById("modal-form").classList.add("active");
   });
 
-  // AQUÍ ESTÁ EL FIX: usamos los IDs reales de tu HTML
   document.getElementById("form-infiel")?.addEventListener("submit", async e => {
     e.preventDefault();
     const btn = e.submitter;
@@ -226,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const j = await res.json();
 
       if (j.success) {
-        alert("Chisme publicado con éxito!");
+        alert("¡Chisme publicado!");
         e.target.reset();
         document.getElementById("modal-form").classList.remove("active");
         cargarInfieles();
@@ -242,7 +239,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Buscador
   document.getElementById("search-input")?.addEventListener("keyup", () => {
     const term = document.getElementById("search-input").value.toLowerCase();
     document.querySelectorAll(".card").forEach(c => {
@@ -251,7 +247,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Modales
 function cerrarModal() { document.getElementById("modal-form").classList.remove("active"); }
 function cerrarDetalle() { document.getElementById("modal-chisme").classList.remove("active"); }
 function cerrarLegal() { document.getElementById("modal-legal").classList.remove("active"); }
