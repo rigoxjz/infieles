@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro Nacional de Infieles</title>
     <style>
-        :root{--azul:#007bff;--rojo:#dc3545;--naranja:#fd7e14;--fondo:#f8f9fa;--blanco:#fff;--gris:#6c757d;--texto:#212529}
+        :root{
+            --azul:#007bff;--rojo:#dc3545;--naranja:#fd7e14;--fondo:#f8f9fa;--blanco:#fff;--gris:#6c757d;--texto:#212529;
+            --dark-bg:#0f172a;--dark-text:#e5e7eb;--dark-muted:#cbd5f5;--dark-highlight:#fbbf24;--dark-danger:#f97373;
+        }
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:system-ui,Arial,sans-serif;background:var(--fondo);color:var(--texto);max-width:500px;margin:0 auto;min-height:100vh}
         #solo-pc{display:none;text-align:center;padding:60px;background:#fff;min-height:100vh;font-size:1.3em}
@@ -27,16 +30,24 @@
         .modal.active{display:flex}
         .modal-content{background:white;border-radius:14px;padding:25px;width:100%;max-height:92vh;overflow-y:auto;position:relative}
         .close{position:absolute;top:10px;right:15px;font-size:32px;cursor:pointer;color:#999}
-        .galeria img,.comentario img{width:100%!important;height:auto!important;border-radius:10px;margin:12px 0;display:block;box-shadow:0 2px 10px rgba(0,0,0,.15)}
-        label{display:block;margin:18px 0 8px;font-weight:bold}
-        input,textarea{width:100%;padding:14px;border:1.5px solid #ddd;border-radius:10px;font-size:1em}
-        textarea{min-height:120px}
-        .votos{display:flex;gap:10px;margin:25px 0}
-        .voto-btn{flex:1;padding:14px;border-radius:10px;color:white;border:none;font-weight:bold}
-        .comentarios{margin-top:30px;border-top:2px solid #eee;padding-top:20px}
-        .comentario{background:#f8f9fa;padding:15px;border-radius:10px;margin:15px 0;border-left:4px solid var(--azul)}
-        .importante{color:var(--naranja);font-weight:bold}
-        .rojo{color:var(--rojo);font-weight:bold}
+
+        /* ESTILO ESPECIAL PARA EL MODAL LEGAL (OSCURO Y MODERNO) */
+        #modal-aviso-legal .modal-content{
+            background:var(--dark-bg);color:var(--dark-text);border:1px solid rgba(148,163,184,0.3);box-shadow:0 20px 40px rgba(15,23,42,0.7);
+        }
+        #modal-aviso-legal h1{font-size:1.8rem;color:#f9fafb;text-align:center}
+        #modal-aviso-legal h2{font-size:1.3rem;margin:24px 0 8px;color:var(--dark-text)}
+        #modal-aviso-legal p{font-size:0.95rem;color:var(--dark-muted);margin:8px 0}
+        #modal-aviso-legal ul{padding-left:20px;margin:8px 0 16px;list-style:disc}
+        #modal-aviso-legal li{font-size:0.95rem;color:var(--dark-muted);margin:4px 0}
+        #modal-aviso-legal .highlight{color:var(--dark-highlight);font-weight:600}
+        #modal-aviso-legal .danger{color:var(--dark-danger);font-weight:600}
+        #modal-aviso-legal .checkbox-area{display:flex;align-items:flex-start;gap:12px;margin:20px 0}
+        #modal-aviso-legal .checkbox-area input{margin-top:4px}
+        #modal-aviso-legal .error-msg{color:#fecaca;font-size:0.9rem;margin-top:8px;display:none}
+        #modal-aviso-legal .error-msg.visible{display:block}
+        #modal-aviso-legal .notice{font-size:0.8rem;color:#9ca3af;margin-top:20px}
+        #modal-aviso-legal .notice strong{color:var(--dark-text)}
     </style>
 </head>
 <body>
@@ -46,62 +57,62 @@
     <p>Abre desde tu teléfono</p>
 </div>
 
-<!-- NUEVO MODAL DE AVISO LEGAL (OBLIGATORIO AL ENTRAR) -->
+<!-- MODAL AVISO LEGAL (PRIMERO AL ENTRAR) -->
 <div id="modal-aviso-legal" class="modal active">
     <div class="modal-content">
-        <h2 style="text-align:center;color:var(--azul)">AVISO LEGAL · TÉRMINOS DE USO</h2>
-        <div style="margin-top:20px;font-size:0.95em;line-height:1.6;overflow-y:auto;max-height:70vh">
+        <h1>AVISO LEGAL · TÉRMINOS DE USO</h1>
+        <div style="margin-top:20px;max-height:65vh;overflow-y:auto">
             <p><strong>Aviso Legal, Responsabilidad y Uso de la Plataforma</strong></p>
             <p>Este documento describe los Términos y Condiciones de Uso de la plataforma. Al utilizar el sitio, el usuario declara que ha leído, entendido y aceptado íntegramente lo aquí establecido.</p>
 
-            <p><strong>1. Naturaleza del contenido</strong></p>
-            <p>La plataforma permite a los usuarios registrar y publicar información bajo su exclusiva iniciativa. El titular del sitio no crea, edita, verifica ni garantiza la veracidad de la información ingresada por terceros.</p>
-            <p class="rojo">El contenido publicado por los usuarios no debe:</p>
+            <h2>1. Naturaleza del contenido</h2>
+            <p>La plataforma permite a los usuarios registrar y publicar información bajo su exclusiva iniciativa. <span class="highlight">El titular del sitio no crea, edita, verifica ni garantiza la veracidad de la información ingresada por terceros.</span></p>
+            <p class="danger">El contenido publicado por los usuarios no debe:</p>
             <ul>
                 <li>Vulnerar la privacidad, el honor, la imagen o la reputación de personas o entidades.</li>
-                <li>Contener datos personales sin el consentimiento correspondiente, cuando así lo exija la ley.</li>
-                <li>Constituir difamación, calumnia, amenazas, acoso o cualquier otro tipo de daño a terceros.</li>
-                <li>Infringir normas sobre protección de datos personales, derechos de autor u otras leyes aplicables.</li>
+                <li>Contener datos personales sin el consentimiento correspondiente.</li>
+                <li>Constituir difamación, calumnia, amenazas, acoso o daño a terceros.</li>
+                <li>Infringir leyes sobre protección de datos, derechos de autor u otras normas aplicables.</li>
             </ul>
 
-            <p><strong>2. Responsabilidad del usuario</strong></p>
-            <p class="rojo">Cada usuario es el único y exclusivo responsable de la información que registra, publica o comparte a través de la plataforma.</p>
-            <p>El usuario declara que la información ingresada es lícita y que tiene derecho a divulgarla.</p>
-            <p class="rojo">El usuario asume íntegramente las consecuencias legales y personales derivadas del uso que haga del sitio.</p>
-            <p>El usuario se compromete a indemnizar y mantener indemne al titular del sitio ante cualquier reclamo de terceros derivado de su uso de la plataforma.</p>
+            <h2>2. Responsabilidad del usuario</h2>
+            <p class="danger">Cada usuario es el único y exclusivo responsable de la información que publica.</p>
+            <p>Declara que la información es lícita y asume todas las consecuencias legales derivadas de su uso.</p>
 
-            <p><strong>3. Limitación de responsabilidad del titular del sitio</strong></p>
-            <p>El titular del sitio:</p>
-            <ul>
-                <li>No se responsabiliza por la veracidad, exactitud, integridad o actualidad del contenido aportado por los usuarios.</li>
-                <li>No se hace responsable de los daños o perjuicios directos o indirectos que pudiera causar el uso de la información publicada por terceros.</li>
-                <li>Se reserva el derecho, mas no la obligación, de eliminar contenidos que considere inapropiados o que vulneren estos términos.</li>
-            </ul>
-            <p class="rojo">El uso de la plataforma para acosar, difamar, exponer o dañar a otras personas está estrictamente prohibido.</p>
+            <h2>3. Limitación de responsabilidad del titular</h2>
+            <p>El titular no se responsabiliza por la veracidad del contenido ni por daños derivados de su uso. Se reserva el derecho de eliminar contenidos inapropiados.</p>
+            <p class="danger">Está estrictamente prohibido usar la plataforma para acosar, difamar o dañar a terceros.</p>
 
-            <p><strong>4. Datos personales y solicitudes de retiro de información</strong></p>
-            <p>Si una persona considera que su información ha sido publicada sin base legal, sin consentimiento o en vulneración de sus derechos, puede solicitar la revisión y eventual eliminación de dicho contenido.</p>
+            <h2>4. Solicitudes de retiro</h2>
+            <p>Si crees que tu información fue publicada sin consentimiento, envía tu solicitud a <strong style="color:#fff">registroinfieles@gmail.com</strong> con detalles para revisión.</p>
 
-            <p><strong>5. Uso adecuado de la plataforma</strong></p>
-            <p class="rojo">El usuario se compromete a:</p>
-            <ul>
-                <li>Respetar los derechos y la dignidad de otras personas.</li>
-                <li>No utilizar la plataforma como medio de venganza, exposición pública, acoso o linchamiento digital.</li>
-                <li>Cumplir con todas las leyes locales, nacionales e internacionales relacionadas con el uso de Internet y la publicación de información.</li>
-            </ul>
+            <h2>5. Uso adecuado</h2>
+            <p class="danger">El usuario se compromete a respetar la dignidad de las personas y no usar la plataforma para venganza o acoso.</p>
 
-            <p><strong>6. No asesoría legal</strong></p>
-            <p>La información en esta página tiene carácter general y no constituye asesoría legal. El usuario es responsable de consultar con un profesional del derecho para obtener orientación específica sobre sus obligaciones y responsabilidades.</p>
+            <h2>6. No asesoría legal</h2>
+            <p>El contenido es general y no constituye asesoría legal.</p>
 
-            <p class="rojo" style="font-size:1.1em;margin-top:25px">
-                Declaro que he leído y acepto los Términos de Uso y el Aviso Legal de esta plataforma, y que no utilizaré el sitio para vulnerar derechos de terceros.
-            </p>
+            <div style="background:rgba(30,41,59,0.8);padding:20px;border-radius:12px;margin:30px 0;border-left:5px solid var(--dark-danger)">
+                <p style="color:#fff;font-size:1.1em;font-weight:600">
+                    Declaro que he leído y acepto los Términos de Uso y el Aviso Legal, y que no usaré el sitio para vulnerar derechos de terceros.
+                </p>
+            </div>
         </div>
+
+        <div class="checkbox-area">
+            <input type="checkbox" id="acceptTerms">
+            <label for="acceptTerms">He leído y acepto los términos anteriores</label>
+        </div>
+        <div id="errorMsg" class="error-msg">Debes aceptar los términos para continuar.</div>
 
         <div style="margin-top:25px;display:flex;flex-direction:column;gap:15px">
-            <button id="btn-aceptar-legal" class="btn btn-azul">Continuar al sitio</button>
-            <button id="btn-salir-legal" class="btn btn-rojo">Salir de la página</button>
+            <button id="btn-aceptar-legal" class="btn btn-azul" style="font-size:1.1em;padding:16px">Continuar al sitio</button>
+            <button id="btn-salir-legal" class="btn btn-rojo" style="font-size:1.1em;padding:16px">Salir de la página</button>
         </div>
+
+        <p class="notice">
+            <strong>Importante:</strong> El titular puede actualizar estos términos en cualquier momento. El uso continuado implica aceptación de la versión vigente.
+        </p>
     </div>
 </div>
 
@@ -123,12 +134,12 @@
         <button class="btn btn-rojo" id="btn-legal">Información Legal Importante</button>
     </header>
     <section id="search-section">
-        <input type="text" id="search-input" placeholder="Buscar por nombre o ciudad..." onkeyup="filtrar()">
+        <input type="text" id="search-input" placeholder="Buscar por nombre o ciudad...">
     </section>
     <div id="lista-infieles"></div>
 </div>
 
-<!-- Modal Formulario -->
+<!-- Tus otros modales (form, chisme, legal) quedan igual -->
 <div id="modal-form" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarModal()">×</span>
@@ -153,7 +164,6 @@
     </div>
 </div>
 
-<!-- Modal Detalle -->
 <div id="modal-chisme" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarDetalle()">×</span>
@@ -161,7 +171,6 @@
     </div>
 </div>
 
-<!-- Modal Legal -->
 <div id="modal-legal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarLegal()">×</span>
@@ -174,21 +183,29 @@
     </div>
 </div>
 
-<!-- SCRIPT EXTERNO -->
 <script src="script.js"></script>
 <script>
-    // Control del nuevo modal de aviso legal
-    document.getElementById("btn-aceptar-legal")?.addEventListener("click", () => {
+    // Control del modal legal con checkbox obligatorio
+    const acceptCheckbox = document.getElementById("acceptTerms");
+    const btnAceptar = document.getElementById("btn-aceptar-legal");
+    const btnSalir = document.getElementById("btn-salir-legal");
+    const errorMsg = document.getElementById("errorMsg");
+
+    btnAceptar.addEventListener("click", () => {
+        if (!acceptCheckbox.checked) {
+            errorMsg.classList.add("visible");
+            return;
+        }
         localStorage.setItem("acepto_legal", "1");
         document.getElementById("modal-aviso-legal").classList.remove("active");
-        document.getElementById("age-modal").classList.add("active"); // Muestra el modal de edad
+        document.getElementById("age-modal").classList.add("active");
     });
 
-    document.getElementById("btn-salir-legal")?.addEventListener("click", () => {
+    btnSalir.addEventListener("click", () => {
         window.location.href = "https://google.com";
     });
 
-    // Si ya aceptó el legal antes, salta directamente al modal de edad
+    // Si ya aceptó, salta al modal de edad
     if (localStorage.getItem("acepto_legal")) {
         document.getElementById("modal-aviso-legal").classList.remove("active");
         document.getElementById("age-modal").classList.add("active");
