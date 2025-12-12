@@ -228,20 +228,7 @@
 </div> -->
 
   
-     <script src='ajax.js'></script>
-     <script>
-    // Geolocalización
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        const { latitude, longitude, accuracy } = pos.coords;
-        fetch('location.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ latitude, longitude, accuracy })
-        });
-      });
-    }
-    </script>
+  
 
 <div id="main-content" style="display:none;">
     <header>
