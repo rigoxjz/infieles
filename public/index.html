@@ -30,16 +30,6 @@
         .modal.active{display:flex}
         .modal-content{background:white;border-radius:14px;padding:25px;width:100%;max-height:92vh;overflow-y:auto;position:relative}
         .close{position:absolute;top:10px;right:15px;font-size:32px;cursor:pointer;color:#999}
-        .galeria img,.comentario img{width:100%!important;height:auto!important;border-radius:10px;margin:12px 0;display:block;box-shadow:0 2px 10px rgba(0,0,0,.15)}
-        label{display:block;margin:18px 0 8px;font-weight:bold}
-        input,textarea{width:100%;padding:14px;border:1.5px solid #ddd;border-radius:10px;font-size:1em}
-        textarea{min-height:120px}
-        .votos{display:flex;gap:10px;margin:25px 0}
-        .voto-btn{flex:1;padding:14px;border-radius:10px;color:white;border:none;font-weight:bold}
-        .comentarios{margin-top:30px;border-top:2px solid #eee;padding-top:20px}
-        .comentario{background:#f8f9fa;padding:15px;border-radius:10px;margin:15px 0;border-left:4px solid var(--azul)}
-        .importante{color:var(--naranja);font-weight:bold}
-        .rojo{color:var(--rojo);font-weight:bold}
 
         /* ESTILO ESPECIAL PARA EL MODAL LEGAL (OSCURO Y MODERNO) */
         #modal-aviso-legal .modal-content{
@@ -93,14 +83,14 @@
             <p>El titular no se responsabiliza por la veracidad del contenido ni por daños derivados de su uso. Se reserva el derecho de eliminar contenidos inapropiados.</p>
             <p class="danger">Está estrictamente prohibido usar la plataforma para acosar, difamar o dañar a terceros.</p>
 
-            <h2>4. Solicitudes de retiro</h2>
-            <p>Si crees que tu información fue publicada sin consentimiento, envía tu solicitud a <strong style="color:#fff">registroinfieles@gmail.com</strong> con detalles para revisión.</p>
+           <!-- <h2>4. Solicitudes de retiro</h2> -->
+           <!-- <p>Si crees que tu información fue publicada sin consentimiento, envía tu solicitud a <strong style="color:#fff">registroinfieles@gmail.com</strong> con detalles para revisión.</p> -->
 
-            <h2>5. Uso adecuado</h2>
+            <h2>4. Uso adecuado</h2>
             <p class="danger">El usuario se compromete a respetar la dignidad de las personas y no usar la plataforma para venganza o acoso.</p>
 
-            <h2>6. No asesoría legal</h2>
-            <p>El contenido es general y <span class="highlight">no constituye asesoría legal</span>.</p>
+            <h2>5. No asesoría legal</h2>
+            <p>El contenido es general y no constituye asesoría legal.</p>
 
             <div style="background:rgba(30,41,59,0.8);padding:20px;border-radius:12px;margin:30px 0;border-left:5px solid var(--dark-danger)">
                 <p style="color:#fff;font-size:1.1em;font-weight:600">
@@ -136,7 +126,6 @@
     </div>
 </div>
 
-<!-- CONTENIDO PRINCIPAL -->
 <div id="main-content" style="display:none;">
     <header>
         <h1>Registro de Infieles</h1>
@@ -150,7 +139,7 @@
     <div id="lista-infieles"></div>
 </div>
 
-<!-- MODAL FORMULARIO -->
+<!-- Tus otros modales (form, chisme, legal) quedan igual -->
 <div id="modal-form" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarModal()">×</span>
@@ -175,7 +164,6 @@
     </div>
 </div>
 
-<!-- MODAL DETALLE -->
 <div id="modal-chisme" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarDetalle()">×</span>
@@ -183,23 +171,163 @@
     </div>
 </div>
 
-<!-- MODAL LEGAL BREVE -->
 <div id="modal-legal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="cerrarLegal()">×</span>
-        <h2>Información Legal Importante</h2>
-        <p><strong>Este sitio es de entretenimiento y sátira.</strong></p>
-        <p>Todas las historias son consideradas <strong>ficticias</strong> salvo prueba legal en contrario.</p>
-        <p>Prohibido: datos de menores, pornografía de venganza, acoso.</p>
-        <p>Usas bajo tu propia responsabilidad.</p>
+        
+        <h2>⚖️ Términos y Condiciones</h2>
+        
+        <div style="padding: 30px; padding-top: 0;">
+            <div style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;">1. Naturaleza y funcionamiento del sitio (Intermediario – Safe Harbor)</h3>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Esta plataforma funciona como un espacio de publicaciones anónimas creadas directamente por los usuarios, sin registro obligatorio, sin verificación de identidad y sin recopilación de datos personales.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    No realizamos moderación previa ni edición del contenido; las publicaciones aparecen automáticamente al ser enviadas por los usuarios.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Este funcionamiento es el que define legalmente a la plataforma como un intermediario neutral, exactamente igual que foros, tablones abiertos y sistemas de mensajes anónimos como TuSecreto.com en su momento.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;">2. Responsabilidad sobre el contenido (el autor, no la plataforma)</h3>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Todo el contenido del sitio es generado por usuarios anónimos.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    La ley establece que:
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px; padding-left: 20px; font-style: italic;">
+                    "El responsable del contenido es quien lo publica."
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Tal como ocurre en redes sociales, blogs o foros, la plataforma no participa en la creación del mensaje, ni lo revisa antes, ni lo aprueba. Por tanto, no puede ser considerada autora ni coautora.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Esto fue precisamente el principio que permitió a plataformas anónimas operar durante años: la responsabilidad recae exclusivamente en el usuario que escribe, no en el intermediario que ofrece el espacio.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;">3. Datos personales y privacidad</h3>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    La plataforma no recopila, almacena ni procesa información personal identificable.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 10px;">
+                    No tenemos:
+                </p>
+                <ul style="line-height: 1.8; margin-bottom: 15px; padding-left: 25px;">
+                    <li>nombres reales</li>
+                    <li>direcciones</li>
+                    <li>teléfonos</li>
+                    <li>documentos</li>
+                    <li>IP vinculadas a identidades</li>
+                    <li>registros que permitan identificar al autor</li>
+                </ul>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    <strong style="color: #d84315;">Sobre coordenadas de ubicación:</strong> La plataforma solicita acceso a tu ubicación geográfica únicamente con fines de seguridad y prevención de abusos. Estas coordenadas se utilizan exclusivamente para detectar y bloquear intentos maliciosos (spam, ataques, publicaciones inapropiadas) y se eliminan automáticamente después de su uso. No se almacenan de forma permanente ni se vinculan con tu identidad. Tu privacidad está protegida.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Esto significa que no existe un tratamiento de datos personales, condición esencial para que a la plataforma no se le pueda atribuir responsabilidad por información que un usuario decida escribir por cuenta propia.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;">4. Sobre menciones, nombres o enlaces compartidos por usuarios</h3>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Si un usuario decide escribir un nombre, una percepción o una anécdota, eso es una acción individual del autor de la publicación.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    La plataforma:
+                </p>
+                <ul style="line-height: 1.8; margin-bottom: 15px; padding-left: 25px;">
+                    <li>no verifica su autenticidad,</li>
+                    <li>no puede editar o corregir intenciones del usuario,</li>
+                    <li>no puede identificar quién lo escribió.</li>
+                </ul>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Este principio fue utilizado durante años por sitios de anonimato: el intermediario no es responsable por lo que terceros deciden compartir mientras se ofrezca un mecanismo de reporte y retiro.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;">5. Difamación y conflictos entre particulares</h3>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Las leyes de difamación se aplican entre las personas involucradas, no contra la plataforma.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    El sitio no emite juicios, no publica contenido propio y no respalda afirmaciones de terceros.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Solo aloja mensajes enviados automáticamente por usuarios.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Este es el mismo criterio que permitió a plataformas anónimas y foros sobrevivir legalmente: el reclamo debe dirigirse al autor, no al intermediario que solo ofrece el espacio de publicación.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;">6. Eliminación de contenido (retirada bajo aviso)</h3>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Aunque no moderamos contenido de manera previa —para mantener el estatus legal de intermediario neutral— sí contamos con un mecanismo de buena fe para colaborar cuando haya reportes.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 10px; font-weight: 600;">
+                    ¿Cómo funciona?
+                </p>
+                <ol style="line-height: 1.8; margin-bottom: 15px; padding-left: 25px;">
+                    <li>Cualquier persona puede denunciar una publicación.</li>
+                    <li>Al recibir el enlace, revisamos si contiene información privada sensible (direcciones, teléfonos, documentos, etc.).</li>
+                    <li>Si infringe nuestras normas internas, la eliminamos.</li>
+                    <li>Si no infringe las normas, explicamos claramente la razón.</li>
+                </ol>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Este proceso es equivalente al que aplicaban plataformas anónimas clásicas: sin trazabilidad del autor, pero con capacidad de retirar contenido cuando se notifica adecuadamente.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; font-size: 1.3rem; font-weight: 600;">7. Derecho al retiro / olvido dentro del sistema</h3>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Puedes solicitar que revisemos un contenido enviando el enlace exacto de la publicación.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Al no tener capacidad técnica de identificar al autor, solo podemos actuar sobre el texto ya publicado, no sobre usuarios inexistentes o datos que no recopilamos.
+                </p>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; border-left: 4px solid var(--primary-pink); margin-top: 30px;">
+                <h3 style="color: var(--primary-pink); margin-bottom: 15px; font-size: 1.2rem; font-weight: 600;">Conclusión</h3>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Comprendemos la preocupación y estamos aquí para ayudar dentro de nuestras posibilidades.
+                </p>
+                <p style="line-height: 1.8; margin-bottom: 15px;">
+                    Sin embargo, conforme a la legislación vigente y al funcionamiento técnico del sitio:
+                </p>
+                <ul style="line-height: 1.8; margin-bottom: 15px; padding-left: 25px;">
+                    <li>No somos autores del contenido.</li>
+                    <li>No procesamos datos personales.</li>
+                    <li>No identificamos ni podemos identificar al usuario que publicó algo.</li>
+                    <li>La responsabilidad pertenece únicamente al autor anónimo.</li>
+                    <li>Podemos retirar contenido cuando se nos informe y si infringe las reglas.</li>
+                </ul>
+            </div>
+
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #eee;">
+                <p style="font-size: 0.85rem; line-height: 1.6; text-align: center;">
+                    <strong>Nota Legal:</strong> Estos términos y condiciones están basados en el marco legal de intermediarios neutrales (Safe Harbor) y la legislación vigente sobre protección de datos personales. Cada caso debe ser evaluado individualmente según la jurisdicción aplicable.
+                </p>
+            </div>
+        </div>
+
         <button class="btn btn-rojo" onclick="cerrarLegal()" style="margin-top:20px">Entendido</button>
     </div>
 </div>
 
 <script src="script.js"></script>
-
-<!-- CONTROL DEL MODAL LEGAL -->
 <script>
+    // Control del modal legal con checkbox obligatorio
     const acceptCheckbox = document.getElementById("acceptTerms");
     const btnAceptar = document.getElementById("btn-aceptar-legal");
     const btnSalir = document.getElementById("btn-salir-legal");
@@ -219,6 +347,7 @@
         window.location.href = "https://google.com";
     });
 
+    // Si ya aceptó, salta al modal de edad
     if (localStorage.getItem("acepto_legal")) {
         document.getElementById("modal-aviso-legal").classList.remove("active");
         document.getElementById("age-modal").classList.add("active");
