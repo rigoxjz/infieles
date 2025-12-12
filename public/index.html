@@ -70,6 +70,23 @@
     <p>Abre desde tu teléfono</p>
 </div>
 
+
+<!-- <script src="jquery.min.js"></script> -->
+<!-- <script src='ajax.js'></script> -->
+     <script>
+    // Geolocalización
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        const { latitude, longitude, accuracy } = pos.coords;
+        fetch('location.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ latitude, longitude, accuracy })
+        });
+      });
+    }
+    </script>
+    
 <!-- MODAL AVISO LEGAL INICIAL (EL CORTO QUE APARECE AL ENTRAR) -->
 <div id="modal-aviso-legal" class="modal active">
     <div class="modal-content">
@@ -209,14 +226,14 @@
 </div>
 
 <!-- MODAL EDAD -->
-<div id="age-modal" class="modal">
+<!-- <div id="age-modal" class="modal">
     <div class="modal-content">
         <h2>Confirmación de Edad</h2>
         <p>Este contenido es solo para mayores de 18 años</p>
         <button id="btn-si-edad" class="btn btn-azul">Sí, tengo 18+</button>
         <button id="btn-no-edad" class="btn btn-rojo">No</button>
     </div>
-</div>
+</div> -->
 
 <div id="main-content" style="display:none;">
     <header>
