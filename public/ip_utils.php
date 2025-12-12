@@ -1,13 +1,13 @@
 <?php
 function get_client_ip(): string {
     $keys = [
-      'HTTP_CLIENT_IP',
-      'HTTP_X_FORWARDED_FOR',
-      'HTTP_X_FORWARDED',
-      'HTTP_X_CLUSTER_CLIENT_IP',
-      'HTTP_FORWARDED_FOR',
-      'HTTP_FORWARDED',
-      'REMOTE_ADDR'
+        'HTTP_CLIENT_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_X_FORWARDED',
+        'HTTP_X_CLUSTER_CLIENT_IP',
+        'HTTP_FORWARDED_FOR',
+        'HTTP_FORWARDED',
+        'REMOTE_ADDR'
     ];
     foreach ($keys as $k) {
         if (!empty($_SERVER[$k])) {
@@ -22,3 +22,4 @@ function get_client_ip(): string {
     }
     return 'Unknown';
 }
+?>
