@@ -1,4 +1,4 @@
-// script.js → PERFECTO + HISTORIA EN BURBUJA (DICIEMBRE 2025)
+// script.js → SIN VISTA PREVIA DEL CHISME EN LA LISTA (DICIEMBRE 2025)
 const API = "https://infieles-v2.onrender.com";
 
 // ==================== +18 ====================
@@ -23,14 +23,13 @@ if (localStorage.getItem("mayor_edad")) {
 
 // ==================== UTILIDADES ====================
 function escapeHtml(t) { return t ? String(t).replace(/</g,"&lt;").replace(/>/g,"&gt;") : ""; }
-function truncate(t, n=130) { return t.length > n ? t.substr(0,n)+"..." : t; }
 function obtenerUserID() {
   let id = localStorage.getItem("USER_ID");
   if (!id) { id = "u" + Math.random().toString(36).substr(2,9); localStorage.setItem("USER_ID", id); }
   return id;
 }
 
-// ==================== LISTA PRINCIPAL (HISTORIA EN BURBUJA) ====================
+// ==================== LISTA PRINCIPAL (SIN NINGUNA VISTA PREVIA DEL CHISME) ====================
 async function cargarInfieles() {
   const lista = document.getElementById("lista-infieles");
   lista.innerHTML = `<div style="text-align:center;padding:50px;color:#666">Cargando...</div>`;
@@ -44,25 +43,18 @@ async function cargarInfieles() {
     datos.forEach(item => {
       const card = document.createElement("div");
       card.className = "card";
-      // Vista previa de la historia en burbuja (igual que comentarios)
-      const previewHistoria = `
-        <div style="background:#f8f9fa;padding:15px;border-radius:10px;margin:15px 0;border-left:4px solid var(--azul);line-height:1.5">
-          ${escapeHtml(truncate(item.historia, 180))}
-        </div>
-      `;
       card.innerHTML = `
         <div class="card-header">${escapeHtml(item.nombre)} ${escapeHtml(item.apellido)}</div>
         <div class="card-body">
           <div class="info"><strong>Edad:</strong> ${item.edad}</div>
           <div class="info"><strong>Ubicación:</strong> ${escapeHtml(item.ubicacion)}</div>
           <div class="info"><strong>Publicado por:</strong> ${escapeHtml(item.reportero || "Anónimo")}</div>
-          ${previewHistoria}
-          <div style="display:flex;justify-content:space-between;background:#f1f1f1;padding:10px;border-radius:8px;font-size:0.9em">
+          <div style="display:flex;justify-content:space-between;background:#f1f1f1;padding:10px;border-radius:8px;font-size:0.9em;margin:15px 0">
             <span>Real ${item.votos_reales || 0}</span>
             <span>Falso ${item.votos_falsos || 0}</span>
             <span>Comentarios ${item.comentarios?.length || 0}</span>
           </div>
-          <button class="btn btn-azul" onclick="verDetalle(${item.id})" style="margin-top:15px;width:100%">Ver chisme completo</button>
+          <button class="btn btn-azul" onclick="verDetalle(${item.id})" style="width:100%">Ver chisme completo</button>
         </div>
       `;
       lista.appendChild(card);
@@ -92,7 +84,7 @@ async function verDetalle(id) {
         `).join("")}
       </div>` : "";
 
-    // Historia completa en burbuja grande (estilo comentario)
+    // Historia completa en burbuja bonita
     const historiaCompleta = `
       <div style="background:#f8f9fa;padding:18px;border-radius:12px;margin:20px 0;border-left:5px solid var(--azul);line-height:1.7;font-size:1.02em;white-space:pre-wrap">
         ${escapeHtml(item.historia)}
@@ -115,7 +107,7 @@ async function verDetalle(id) {
           ${item.comentarios?.length ? item.comentarios.map(c => `
             <div class="comentario">
               <strong>${escapeHtml(c.nombre || "Anónimo")}</strong>
-              <p>${escapeHtml(c.texto)}</p>
+             -<p>${escapeHtml(c.texto)}</p>
             </div>
           `).join("") : "<p style='color:#888;text-align:center;padding:20px'>Sin comentarios aún</p>"}
         </div>
@@ -143,9 +135,7 @@ async function verDetalle(id) {
   }
 }
 
-// ==================== VOTO, COMENTARIO, FOTO, PUBLICAR (todo igual que antes, funciona perfecto) ====================
-// (Mantengo las funciones sin cambios porque ya funcionan 100%)
-
+// ==================== VOTO, COMENTARIO, FOTO, PUBLICAR (sin cambios, funcionan perfecto) ====================
 async function votar(id, esReal) {
   const userID = obtenerUserID();
   try {
