@@ -1,200 +1,323 @@
-// ================================
-// CONFIG
-// ================================
+// =========================
+// script.js (corregido)
+// =========================
 const API = "https://infieles-v2.onrender.com";
 
-// ================================
-// MAYOR DE EDAD
-// ================================
-function confirmAge(ok) {
-    if (ok) {
-        document.getElementById("agePopup").style.display = "none";
-    } else {
-        window.location.href = "https://google.com";
+// -------------------------
+// Helpers
+// -------------------------
+function escapeHtml(s){ if(s==null) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function truncate(s,n=90){ if(!s) return ""; return s.length>n ? s.substring(0,n)+"..." : s; }
+
+// -------------------------
+// Edad (función global usada por los botones inline del HTML)
+// -------------------------
+function confirmAge(ok){
+  const ageModal = document.getElementById("age-modal");
+  const mainContent = document.getElementById("main-content");
+  if(ok){
+    if(ageModal) { ageModal.classList.remove("active"); ageModal.style.display = "none"; }
+    if(mainContent) mainContent.style.display = "block";
+    // cargar chismes la primera vez que confirman
+    cargarInfieles();
+  } else {
+    alert("No puedes entrar");
+    window.location.href = "https://google.com";
+  }
+}
+window.confirmAge = confirmAge; // se expone globalmente para onclick inline
+
+// -------------------------
+// Cargar chismes (lista principal)
+// -------------------------
+async function cargarInfieles(){
+  const lista = document.getElementById("lista-infieles");
+  if(!lista) return;
+  lista.innerHTML = "<p style='text-align:center;padding:18px'>Cargando chismes...</p>";
+
+  let datos;
+  try{
+    const res = await fetch(`${API}/infieles`);
+    datos = await res.json();
+  }catch(e){
+    console.error("Error fetch /infieles",e);
+    lista.innerHTML = "<p style='text-align:center;padding:18px;color:red'>Error al cargar chismes</p>";
+    return;
+  }
+
+  lista.innerHTML = "";
+  if(!Array.isArray(datos) || datos.length === 0){
+    lista.innerHTML = "<p style='text-align:center;padding:18px'>No hay chismes aún</p>";
+    return;
+  }
+
+  datos.forEach(item=>{
+    const reportero = item.reportero && item.reportero.trim()!=="" ? item.reportero : "Anónimo";
+    const votosReales = Number(item.votos_reales || 0);
+    const votosFalsos = Number(item.votos_falsos || 0);
+    const comentariosCount = Array.isArray(item.comentarios) ? item.comentarios.length : 0;
+
+    // miniatura HTML (usa primera foto si existe)
+    let thumbHTML = "";
+    if(Array.isArray(item.fotos) && item.fotos.length > 0){
+      thumbHTML = `<div style="padding:12px"><img src="data:image/jpeg;base64,${item.fotos[0]}" alt="prueba" style="width:120px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer" onclick="mostrarDetallePorId(${item.id})"></div>`;
     }
-}
 
-// ================================
-// CARGAR LISTA DE INFIELES
-// ================================
-async function cargarInfieles() {
-    const cont = document.getElementById("listaInfieles");
-    cont.innerHTML = "<p>Cargando...</p>";
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="card-header">${escapeHtml(item.nombre)} ${escapeHtml(item.apellido)}</div>
+      <div class="card-body" style="display:flex;gap:12px;align-items:flex-start">
+        ${thumbHTML}
+        <div style="flex:1">
+          <p class="info"><strong>Edad:</strong> ${escapeHtml(String(item.edad||""))}</p>
+          <p class="info"><strong>Ubicación:</strong> ${escapeHtml(item.ubicacion||"")}</p>
+          <p class="info"><strong>Publicado por:</strong> ${escapeHtml(reportero)}</p>
+          <p class="info"><strong>Historia:</strong> ${escapeHtml(truncate(item.historia||"",90))}</p>
 
-    try {
-        const res = await fetch(API + "/infieles");
-        const data = await res.json();
+          <div style="margin-top:8px;background:#f8f9fa;padding:8px;border-radius:8px;font-size:0.95em">
+            ✔️ Reales: <strong>${votosReales}</strong> &nbsp;&nbsp; ❌ Falsos: <strong>${votosFalsos}</strong> &nbsp;&nbsp; 💬 <strong>${comentariosCount}</strong>
+          </div>
 
-        cont.innerHTML = "";
-
-        data.forEach(infiel => {
-            const card = document.createElement("div");
-            card.className = "card";
-
-            // Foto pequeña
-            let fotoMini = "";
-            if (infiel.fotos.length > 0) {
-                fotoMini = `
-                    <img src="data:image/jpeg;base64,${infiel.fotos[0]}" 
-                         class="foto-mini"
-                         onclick="verImagen('${infiel.fotos[0]}')">
-                `;
-            }
-
-            card.innerHTML = `
-                ${fotoMini}
-                <h3>${infiel.nombre || "Anónimo"} ${infiel.apellido || ""}</h3>
-                <p><b>Ubicación:</b> ${infiel.ubicacion}</p>
-
-                <button onclick="verChisme(${infiel.id})" class="btn-ver">
-                    Ver chisme completo
-                </button>
-
-                <div class="contador">
-                    👍 ${infiel.votos_reales}  
-                    👎 ${infiel.votos_falsos}
-                </div>
-            `;
-            cont.appendChild(card);
-        });
-
-    } catch (e) {
-        cont.innerHTML = "<p>Error al cargar.</p>";
-    }
-}
-
-// ================================
-// VER IMAGEN COMPLETA
-// ================================
-function verImagen(base64) {
-    const visor = document.getElementById("visorImg");
-    const img = document.getElementById("visorImgTag");
-
-    img.src = "data:image/jpeg;base64," + base64;
-    visor.style.display = "flex";
-}
-
-function cerrarVisor() {
-    document.getElementById("visorImg").style.display = "none";
-}
-
-// ================================
-// VER CHISME COMPLETO
-// ================================
-async function verChisme(id) {
-    const res = await fetch(API + "/infieles");
-    const lista = await res.json();
-    const data = lista.find(x => x.id === id);
-
-    const modal = document.getElementById("modalChisme");
-    const contenido = document.getElementById("modalContenido");
-
-    let fotosHTML = "";
-    data.fotos.forEach(f => {
-        fotosHTML += `
-            <img src="data:image/jpeg;base64,${f}" 
-                 class="foto-mini" 
-                 onclick="verImagen('${f}')">
-        `;
-    });
-
-    let comentariosHTML = "";
-    data.comentarios.forEach(c => {
-        comentariosHTML += `
-            <div class="comentario">
-                <b>${c.nombre}</b>: ${c.texto}
-            </div>
-        `;
-    });
-
-    contenido.innerHTML = `
-        <h2>${data.nombre || "Anónimo"} ${data.apellido}</h2>
-        <p><b>Historia:</b> ${data.historia}</p>
-        
-        <h3>Pruebas</h3>
-        <div class="fotos">${fotosHTML}</div>
-
-        <h3>Votos</h3>
-        <div class="contador">
-            👍 ${data.votos_reales}  
-            👎 ${data.votos_falsos}
+          <button class="btn btn-azul btn-ver" data-id="${item.id}" style="margin-top:10px">Ver chisme completo</button>
         </div>
-
-        <button class="btn-voto" onclick="votar(${id}, true)">👍 Es real</button>
-        <button class="btn-voto" onclick="votar(${id}, false)">👎 Es falso</button>
-
-        <h3>Comentarios</h3>
-        ${comentariosHTML}
-
-        <textarea id="comentarioTxt" placeholder="Escribe tu comentario..."></textarea>
-        <button class="btn-enviar" onclick="enviarComentario(${id})">Enviar comentario</button>
+      </div>
     `;
+    lista.appendChild(card);
+  });
 
-    modal.style.display = "flex";
+  // atachar listeners a botones ver
+  document.querySelectorAll(".btn-ver").forEach(btn=>{
+    btn.removeEventListener("click", _onVerClick);
+    btn.addEventListener("click", _onVerClick);
+  });
 }
+function _onVerClick(e){ const id = e.currentTarget.getAttribute("data-id"); if(id) mostrarDetallePorId(Number(id)); }
+window.cargarInfieles = cargarInfieles;
 
-function cerrarChisme() {
-    document.getElementById("modalChisme").style.display = "none";
-}
+// -------------------------
+// Mostrar detalle en modal (carga votos y comentarios al abrir)
+// -------------------------
+async function mostrarDetallePorId(id){
+  const modal = document.getElementById("modal-chisme");
+  const detalle = document.getElementById("detalle-chisme");
+  if(!modal || !detalle) return;
+  detalle.innerHTML = "<p style='text-align:center;padding:18px'>Cargando...</p>";
+  modal.classList.add("active");
 
-// ================================
-// VOTAR (Sin nombre, una vez por usuario)
-// ================================
-async function votar(id, voto) {
-    const key = "voto_" + id;
+  let datos;
+  try{
+    const res = await fetch(`${API}/infieles`);
+    datos = await res.json();
+  }catch(e){
+    console.error("Error fetch detalle", e);
+    detalle.innerHTML = "<p style='color:red'>Error al obtener detalle</p>";
+    return;
+  }
 
-    if (localStorage.getItem(key)) {
-        alert("Ya votaste este chisme.");
-        return;
-    }
+  const item = Array.isArray(datos) ? datos.find(x=>Number(x.id)===Number(id)) : null;
+  if(!item){ detalle.innerHTML = "<p>Chisme no encontrado</p>"; return; }
 
-    try {
-        await fetch(API + "/votar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                infiel_id: id,
-                usuario: key,  // identificador interno local
-                voto
-            })
-        });
+  const reportero = item.reportero && item.reportero.trim()!=="" ? item.reportero : "Anónimo";
+  const fotos = Array.isArray(item.fotos) ? item.fotos : [];
+  const comentarios = Array.isArray(item.comentarios) ? item.comentarios : [];
+  const votosReales = Number(item.votos_reales || 0);
+  const votosFalsos = Number(item.votos_falsos || 0);
 
-        localStorage.setItem(key, "1");
-        alert("Voto registrado.");
+  // thumbnails en modal
+  let fotosHTML = "";
+  if(fotos.length>0){
+    fotosHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    fotos.forEach((f,idx)=> {
+      fotosHTML += `<img src="data:image/jpeg;base64,${f}" data-full="data:image/jpeg;base64,${f}" style="width:90px;height:70px;object-fit:cover;border-radius:8px;cursor:pointer">`;
+    });
+    fotosHTML += "</div>";
+  }
+
+  // comentarios html
+  let comentariosHTML = comentarios.length ? comentarios.map(c=>{
+    const nombre = c.nombre && c.nombre.trim()!=="" ? c.nombre : "Anónimo";
+    const propietarioLabel = c.propietario ? ' <strong style="color:var(--azul)">(Propietario)</strong>' : '';
+    const fotosC = Array.isArray(c.fotos) ? c.fotos.map(ff=>`<img src="data:image/jpeg;base64,${ff}" style="width:100%;height:auto;margin-top:8px;border-radius:8px;cursor:pointer">`).join("") : "";
+    return `<div class="comentario"><strong>${escapeHtml(nombre)}</strong>${propietarioLabel}<p>${escapeHtml(c.texto)}</p>${fotosC}</div>`;
+  }).join("") : "<p>No hay comentarios aún</p>";
+
+  detalle.innerHTML = `
+    <h2>${escapeHtml(item.nombre)} ${escapeHtml(item.apellido)}</h2>
+    <p class="info"><strong>Edad:</strong> ${escapeHtml(String(item.edad||""))}</p>
+    <p class="info"><strong>Ubicación:</strong> ${escapeHtml(item.ubicacion||"")}</p>
+    <p class="info"><strong>Publicado por:</strong> ${escapeHtml(reportero)}</p>
+    <p style="white-space:pre-wrap">${escapeHtml(item.historia || "")}</p>
+
+    ${fotosHTML}
+
+    <div class="votos" style="margin-top:12px">
+      <button id="btn-votar-real" class="voto-btn" style="background:green">Es real (${votosReales})</button>
+      <button id="btn-votar-falso" class="voto-btn" style="background:red">Es falso (${votosFalsos})</button>
+    </div>
+
+    <div class="comentarios" style="margin-top:18px">
+      <h3>Comentarios</h3>
+      <div id="lista-comentarios">${comentariosHTML}</div>
+
+      <h4 style="margin-top:12px">Agregar comentario</h4>
+      <input id="coment-nombre-modal" type="text" placeholder="Tu nombre (opcional)" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px">
+      <textarea id="coment-texto-modal" placeholder="Tu comentario" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;min-height:80px"></textarea>
+      <input id="coment-fotos-modal" type="file" accept="image/*" multiple style="margin-top:8px">
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="coment-submit" class="btn btn-azul">Comentar</button>
+        <button id="cerrar-detalle" class="btn btn-rojo">Cerrar</button>
+      </div>
+      <div id="coment-status" style="margin-top:8px;color:green;display:none"></div>
+    </div>
+  `;
+
+  // ampliar imágenes con simple viewer
+  document.querySelectorAll('#detalle-chisme img[data-full]').forEach(img=>{
+    img.addEventListener('click', ()=> openImageViewer(img.getAttribute('data-full')));
+  });
+
+  // votos: simple bloqueo con localStorage (no pide nombre)
+  const btnReal = document.getElementById("btn-votar-real");
+  const btnFalso = document.getElementById("btn-votar-falso");
+  if(localStorage.getItem(`voto_real_${id}`)) btnReal.disabled = true;
+  if(localStorage.getItem(`voto_falso_${id}`)) btnFalso.disabled = true;
+
+  btnReal.addEventListener('click', async ()=>{
+    if(localStorage.getItem(`voto_real_${id}`) || localStorage.getItem(`voto_falso_${id}`)){ alert("Ya votaste"); return; }
+    try{
+      const r = await fetch(`${API}/votar`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ infiel_id:id, usuario: `anon-${navigator.userAgent}`, voto:true })});
+      const j = await r.json();
+      if(r.ok && j.success){
+        localStorage.setItem(`voto_real_${id}`, "1");
+        mostrarDetallePorId(id);
         cargarInfieles();
-        cerrarChisme();
+      } else {
+        alert(j.error || "Error al votar");
+      }
+    }catch(e){ console.error(e); alert("Error al votar"); }
+  });
 
-    } catch (e) {
-        alert("Error al votar");
-    }
+  btnFalso.addEventListener('click', async ()=>{
+    if(localStorage.getItem(`voto_real_${id}`) || localStorage.getItem(`voto_falso_${id}`)){ alert("Ya votaste"); return; }
+    try{
+      const r = await fetch(`${API}/votar`, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ infiel_id:id, usuario: `anon-${navigator.userAgent}`, voto:false })});
+      const j = await r.json();
+      if(r.ok && j.success){
+        localStorage.setItem(`voto_falso_${id}`, "1");
+        mostrarDetallePorId(id);
+        cargarInfieles();
+      } else {
+        alert(j.error || "Error al votar");
+      }
+    }catch(e){ console.error(e); alert("Error al votar"); }
+  });
+
+  // comentar: no recargar página; mostrar "Comentario enviado"
+  document.getElementById("coment-submit").addEventListener('click', async ()=>{
+    const nombre = document.getElementById("coment-nombre-modal").value || "Anónimo";
+    const texto = document.getElementById("coment-texto-modal").value || "";
+    const archivos = document.getElementById("coment-fotos-modal").files;
+    const status = document.getElementById("coment-status");
+    if(!texto.trim()){ alert("Escribe un comentario"); return; }
+
+    const fd = new FormData();
+    fd.append("infiel_id", id);
+    fd.append("nombre", nombre);
+    fd.append("texto", texto);
+    fd.append("propietario", (nombre.trim()!=="" && nombre.trim() === (item.reportero||"").trim()) );
+    for(let a of archivos) fd.append("fotos", a);
+
+    try{
+      const r = await fetch(`${API}/comentario`, { method:"POST", body: fd });
+      const j = await r.json();
+      if(r.ok && j.success){
+        // limpiar inputs y mostrar mensaje
+        document.getElementById("coment-nombre-modal").value = "";
+        document.getElementById("coment-texto-modal").value = "";
+        document.getElementById("coment-fotos-modal").value = "";
+        status.style.display = "block";
+        status.textContent = "Comentario enviado";
+        // actualizar lista de comentarios sin recargar: obtener nuevo comentario (simple: recargar modal)
+        mostrarDetallePorId(id);
+      } else {
+        alert(j.error || "Error al comentar");
+      }
+    }catch(e){ console.error(e); alert("Error al comentar"); }
+  });
+
+  // cerrar detalle
+  document.getElementById("cerrar-detalle").addEventListener('click', ()=>{
+    document.getElementById("modal-chisme").classList.remove("active");
+  });
 }
+window.mostrarDetallePorId = mostrarDetallePorId;
 
-// ================================
-// ENVIAR COMENTARIO
-// ================================
-async function enviarComentario(id) {
-    const txt = document.getElementById("comentarioTxt").value.trim();
-    if (txt === "") return alert("Escribe algo");
-
-    try {
-        await fetch(API + "/comentario", {
-            method: "POST",
-            body: new FormData(Object.assign(document.createElement("form"), {
-                infiel_id: id,
-                texto: txt,
-                nombre: "Anónimo"
-            }))
-        });
-
-        alert("Comentario enviado");
-        verChisme(id); // Recargar chisme sin cerrar
-
-    } catch (e) {
-        alert("Error al comentar");
-    }
+// -------------------------
+// Image viewer
+// -------------------------
+function openImageViewer(src){
+  let v = document.getElementById("image-viewer");
+  if(!v){
+    v = document.createElement("div");
+    v.id = "image-viewer";
+    v.style = "position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:9999";
+    v.innerHTML = `<img id="image-viewer-img" src="${src}" style="max-width:95%;max-height:95%;border-radius:8px">`;
+    v.addEventListener('click', ()=> v.style.display = 'none');
+    document.body.appendChild(v);
+  } else {
+    document.getElementById("image-viewer-img").src = src;
+    v.style.display = "flex";
+  }
 }
+function closeImageViewer(){ const v = document.getElementById("image-viewer"); if(v) v.style.display='none'; }
 
-// ================================
-// INICIO
-// ================================
-document.addEventListener("DOMContentLoaded", cargarInfieles);
+// -------------------------
+// Abrir modal form/legal, y close handlers
+// -------------------------
+document.getElementById("btn-agregar")?.addEventListener('click', ()=> document.getElementById("modal-form").classList.add("active"));
+document.getElementById("btn-legal")?.addEventListener('click', ()=> document.getElementById("modal-legal").classList.add("active"));
+document.querySelectorAll(".close").forEach(c => c.addEventListener('click', ()=> c.closest('.modal')?.classList.remove('active')));
+
+// -------------------------
+// Envío formulario nuevo chisme (mantiene flujo)
+// -------------------------
+document.getElementById("form-infiel")?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const fd = new FormData();
+  fd.append("reportero", document.getElementById("reportero").value);
+  fd.append("nombre", document.getElementById("nombre").value);
+  fd.append("apellido", document.getElementById("apellido").value);
+  fd.append("edad", document.getElementById("edad").value);
+  fd.append("ubicacion", document.getElementById("ubicacion").value);
+  fd.append("historia", document.getElementById("historia").value);
+  const archivos = document.getElementById("pruebas").files;
+  for(let a of archivos) fd.append("fotos", a);
+
+  try{
+    const r = await fetch(`${API}/nuevo`, { method:"POST", body: fd });
+    const j = await r.json();
+    if(r.ok && j.success){
+      document.getElementById("modal-form").classList.remove("active");
+      cargarInfieles();
+    } else {
+      alert(j.error || "Error al publicar");
+    }
+  }catch(e){ console.error(e); alert("Error al publicar"); }
+});
+
+// -------------------------
+// Filtrar
+// -------------------------
+function filtrar(){
+  const txt = (document.getElementById("search-input")?.value || "").toLowerCase();
+  document.querySelectorAll(".card").forEach(c => c.style.display = c.innerText.toLowerCase().includes(txt) ? "block" : "none");
+}
+window.filtrar = filtrar;
+
+// -------------------------
+// Init: no cerrar modal por defecto (ya en HTML)
+// -------------------------
+document.addEventListener("DOMContentLoaded", ()=> {
+  // Si deseas recordar que el usuario confirmó edad: usar localStorage aquí
+});
