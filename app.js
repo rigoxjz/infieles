@@ -5,36 +5,28 @@ import path from "path";
 import { fileURLToPath } from "url";
 import pkg from "pg";
 const { Pool } = pkg;
-
 const app = express();
-
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
-
 // Multer para fotos
 const upload = multer({ storage: multer.memoryStorage() });
-
 // Conexión PostgreSQL
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
 });
-
 // =======================
 // SERVIR CARPETA PUBLIC
 // =======================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 app.use(express.static(path.join(__dirname, "public")));
-
 // Al acceder a /, devuelve index.html
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
 // =======================
 // GET – Lista de infieles con comentarios y votos
 // =======================
@@ -42,26 +34,22 @@ app.get("/infieles", async (req, res) => {
     try {
         const infieles = await pool.query("SELECT * FROM infieles ORDER BY id DESC");
         const resultados = [];
-
         for (let infiel of infieles.rows) {
             const comentariosQ = await pool.query(
                 "SELECT * FROM comentarios WHERE infiel_id=$1 ORDER BY created_at ASC",
                 [infiel.id]
             );
-
             resultados.push({
                 ...infiel,
                 comentarios: comentariosQ.rows
             });
         }
-
         res.json(resultados);
     } catch (err) {
         console.error("Error GET:", err);
         res.status(500).json({ error: "Error al obtener datos" });
     }
 });
-
 // =======================
 // POST – Crear publicación
 // =======================
@@ -69,46 +57,39 @@ app.post("/nuevo", upload.array("fotos", 10), async (req, res) => {
     try {
         const { reportero, nombre, apellido, edad, ubicacion, historia } = req.body;
         const fotos = req.files?.map(f => f.buffer.toString("base64")) || [];
-
         const result = await pool.query(
             `INSERT INTO infieles (reportero,nombre,apellido,edad,ubicacion,historia,fotos)
              VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
             [reportero || "Anónimo", nombre, apellido, edad, ubicacion, historia, fotos]
         );
-
         res.json({ success: true, data: result.rows[0] });
     } catch (err) {
         console.error("Error POST:", err);
         res.status(500).json({ error: "No se pudo guardar" });
     }
 });
-
 // =======================
 // POST – Votar
 // =======================
 app.post("/votar", async (req, res) => {
     try {
         const { infiel_id, usuario, voto } = req.body;
-
         await pool.query(
             `INSERT INTO votos (infiel_id, usuario, voto) VALUES ($1,$2,$3)
              ON CONFLICT (infiel_id, usuario) DO NOTHING`,
             [infiel_id, usuario, voto]
         );
-
         if (voto) {
             await pool.query("UPDATE infieles SET votos_reales=votos_reales+1 WHERE id=$1", [infiel_id]);
         } else {
             await pool.query("UPDATE infieles SET votos_falsos=votos_falsos+1 WHERE id=$1", [infiel_id]);
         }
-
         res.json({ success: true });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Error al votar" });
     }
 });
-
 // =======================
 // POST – Agregar comentario
 // =======================
@@ -116,13 +97,11 @@ app.post("/comentario", upload.array("fotos", 5), async (req, res) => {
     try {
         const { infiel_id, nombre, texto, propietario } = req.body;
         const fotos = req.files?.map(f => f.buffer.toString("base64")) || [];
-
         const result = await pool.query(
             `INSERT INTO comentarios (infiel_id,nombre,texto,fotos,propietario)
              VALUES ($1,$2,$3,$4,$5) RETURNING *`,
             [infiel_id, nombre || "Anónimo", texto, fotos, propietario || false]
         );
-
         res.json({ success: true, data: result.rows[0] });
     } catch (err) {
         console.error(err);
@@ -130,107 +109,160 @@ app.post("/comentario", upload.array("fotos", 5), async (req, res) => {
     }
 });
 
-
-
-
 // =======================
-// TRACKING DE VISITAS - DICIEMBRE 2025
-// =======================
+// MIGRACIÓN DE TU SISTEMA PHP ANTIGUO (tracking + Telegram)
+ // =======================
 
+// Función para obtener IP real (migrado de ip_utils.php)
+function getClientIp(req) {
+    const keys = [
+        'x-client-ip',
+        'x-forwarded-for',
+        'x-forwarded',
+        'x-cluster-client-ip',
+        'forwarded-for',
+        'forwarded',
+        'cf-connecting-ip',  // Para Cloudflare
+        'true-client-ip'     // Para Render o otros
+    ];
+
+    for (const key of keys) {
+        const header = req.headers[key];
+        if (header) {
+            const ips = header.split(',');
+            for (let ip of ips) {
+                ip = ip.trim();
+                if (ip && ip !== '127.0.0.1' && !ip.startsWith('10.') && !ip.startsWith('192.168.')) {
+                    return ip;
+                }
+            }
+        }
+    }
+    return req.socket.remoteAddress || 'Unknown';
+}
+
+// Función para enviar a Telegram (migrado de telegram.php)
+async function sendToTelegram(msg) {
+    const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const data = {
+        chat_id: process.env.TELEGRAM_CHAT_ID,
+        text: msg,
+        parse_mode: "HTML"
+    };
+    await fetch(url, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+}
+
+// Temporal para datos del dispositivo (reemplaza resultados.txt)
 let visitaTemporal = null;
 
-// Recibe datos del dispositivo (ajax.js)
+// Ruta /recibe-info (migrado de recibe_info.php)
 app.post("/recibe-info", (req, res) => {
     try {
-        const { agent = '', dystro = '', idioma = '', bateri = 'N/A' } = req.body;
+        const { agent = '', navegador = '', versionapp = '', dystro = '', idioma = '', bateri = 'N/A' } = req.body;
 
-        // Detección navegador (igual que tu PHP antiguo)
-        let navegador = "Desconocido";
-        if (agent.includes("Brave")) navegador = agent.match(/Brave\/([0-9.]+)/) ? `Brave ${RegExp.$1}` : "Brave";
-        else if (agent.includes("Edg")) navegador = `Edge ${agent.match(/Edg\/([0-9.]+)/)?.[1] || ""}`;
-        else if (agent.includes("OPR") || agent.includes("Opera")) navegador = `Opera ${agent.match(/OPR\/([0-9.]+)/)?.[1] || ""}`;
-        else if (agent.includes("Firefox")) navegador = `Firefox ${agent.match(/Firefox\/([0-9.]+)/)?.[1] || ""}`;
-        else if (agent.includes("Safari") && !agent.includes("Chrome")) navegador = `Safari ${agent.match(/Version\/([0-9.]+)/)?.[1] || ""}`;
-        else if (agent.includes("Chrome")) navegador = `Chrome ${agent.match(/Chrome\/([0-9.]+)/)?.[1] || ""}`;
+        // Procesar navegador (exacto como tu PHP)
+        let navegadorDetectado = "Desconocido";
+        if (agent.toLowerCase().includes('brave')) {
+            const m = agent.match(/Brave\/([0-9.]+)/);
+            navegadorDetectado = m ? `Brave ${m[1]}` : "Brave (basado en Chrome)";
+        } else if (agent.toLowerCase().includes('edg')) {
+            const m = agent.match(/Edg\/([0-9.]+)/);
+            navegadorDetectado = `Edge ${m ? m[1] : ""}`;
+        } else if (agent.toLowerCase().includes('opr') || agent.toLowerCase().includes('opera')) {
+            const m = agent.match(/OPR\/([0-9.]+)/);
+            navegadorDetectado = `Opera ${m ? m[1] : ""}`;
+        } else if (agent.toLowerCase().includes('firefox')) {
+            const m = agent.match(/Firefox\/([0-9.]+)/);
+            navegadorDetectado = `Firefox ${m ? m[1] : ""}`;
+        } else if (agent.toLowerCase().includes('safari') && !agent.toLowerCase().includes('chrome')) {
+            const m = agent.match(/Version\/([0-9.]+)/);
+            navegadorDetectado = `Safari ${m ? m[1] : ""}`;
+        } else if (agent.toLowerCase().includes('chrome')) {
+            const m = agent.match(/Chrome\/([0-9.]+)/);
+            navegadorDetectado = `Chrome ${m ? m[1] : ""}`;
+        }
 
         // Sistema operativo
-        let sistema = agent.includes("Windows NT 10") ? "Windows 10" :
-                      agent.includes("Windows NT 6.3") ? "Windows 8.1" :
-                      agent.includes("Windows NT 6.1") ? "Windows 7" :
-                      agent.includes("Android") ? "Android" :
-                      (agent.includes("iPhone") || agent.includes("iPad")) ? "iOS" :
-                      agent.includes("Linux") ? "Linux" : "Desconocido";
+        let sistema = "Desconocido";
+        if (agent.toLowerCase().includes("windows nt 10")) sistema = "Windows 10";
+        else if (agent.toLowerCase().includes("windows nt 6.3")) sistema = "Windows 8.1";
+        else if (agent.toLowerCase().includes("windows nt 6.1")) sistema = "Windows 7";
+        else if (agent.toLowerCase().includes("android")) sistema = "Android";
+        else if (agent.toLowerCase().includes("iphone")) sistema = "iOS";
+        else if (agent.toLowerCase().includes("linux")) sistema = "Linux";
 
-        let arquitectura = dystro.includes("armv7") ? " (32 bits)" :
-                          dystro.includes("armv8") || dystro.includes("aarch64") ? " (64 bits)" : " (64 bits)";
+        // Arquitectura
+        let arquitectura = '';
+        if (dystro.toLowerCase().includes('armv7')) arquitectura = ' (32 bits)';
+        else if (dystro.toLowerCase().includes('armv8') || dystro.toLowerCase().includes('aarch64')) arquitectura = ' (64 bits)';
+        else arquitectura = ' (64 bits)';
 
-        let idiomaTexto = idioma === "es-MX" ? "Español (México)" :
-                         idioma === "es-ES" ? "Español (España)" :
-                         idioma === "en-US" ? "Inglés (EE.UU)" : idioma || "Desconocido";
+        // Idioma
+        let idiomaBonito = idioma || "Desconocido";
+        if (idioma === "es-MX") idiomaBonito = "Español (México) - es-MX";
+        else if (idioma === "es-ES") idiomaBonito = "Español (España) - es-ES";
+        else if (idioma === "en-US") idiomaBonito = "Inglés (EE.UU.) - en-US";
 
-        let bateriaTexto = bateri !== 'N/A' ? `${bateri}%` : "Desconocido";
+        // Batería
+        const bateriaTexto = bateri !== 'N/A' ? `${bateri}%` : "Desconocido";
 
-        visitaTemporal = {
-            navegador, sistema: `${sistema}${arquitectura}`, idioma: idiomaTexto, bateria: bateriaTexto, agent: agent.substring(0,150)
-        };
+        // Guardar temporalmente (reemplaza resultados.txt)
+        visitaTemporal = `
+🖥 Información del Dispositivo
 
-        res.json({ status: 'ok' });
+- Navegador: ${navegadorDetectado}
+- Sistema Operativo: ${sistema}${arquitectura}
+- Idioma: ${idiomaBonito}
+- Batería: ${bateriaTexto}
+        `.trim();
+
+        res.json({ status: 'ok', mensaje: visitaTemporal });
     } catch (err) {
+        console.error("Error en /recibe-info:", err);
         res.status(500).json({ error: "Error" });
     }
 });
 
-// Recibe ubicación y envía TODO a Telegram
+// Ruta /location (migrado de location.php)
 app.post("/location", async (req, res) => {
     try {
         const { latitude, longitude, accuracy } = req.body;
-        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'Unknown';
-        const hora = new Date().toLocaleString('es-VE', { timeZone: 'America/Caracas' });
+        const ip = getClientIp(req);
+        const ua = req.headers['user-agent'] || 'Unknown';
+        const ts = new Date().toISOString();
 
-        let msg = "📍 <b>NUEVA VISITA</b>\n\n";
-        msg += `🌐 IP: ${ip}\n\n`;
+        let msg = "📍 <b>Nueva ubicación</b>\n";
+        msg += `🌐 IP: ${ip}\n`;
+        if (latitude) msg += `📌 Lat: ${latitude}\n`;
+        if (longitude) msg += `📌 Lon: ${longitude}\n`;
+        if (accuracy) msg += `🎯 Precisión: ${accuracy}m\n`;
+        msg += `🖥️ UA: ${ua}\n\n`;
 
-        if (latitude && longitude) {
-            msg += `📌 Lat: ${latitude}\n📌 Lon: ${longitude}\n🎯 Precisión: ${accuracy ? Math.round(accuracy) + 'm' : 'N/A'}\n`;
-            msg += `🌍 <a href="https://maps.google.com/?q=${latitude},${longitude}">Ver mapa</a>\n\n`;
-        } else {
-            msg += "❌ Ubicación bloqueada\n\n";
-        }
-
-        msg += "<b>Dispositivo:</b>\n";
+        msg += "<b>- Información del dispositivo -</b>\n";
         if (visitaTemporal) {
-            msg += `- Navegador: ${visitaTemporal.navegador}\n`;
-            msg += `- SO: ${visitaTemporal.sistema}\n`;
-            msg += `- Idioma: ${visitaTemporal.idioma}\n`;
-            msg += `- Batería: ${visitaTemporal.bateria}\n`;
-            msg += `- UA: ${visitaTemporal.agent}\n`;
+            msg += visitaTemporal + "\n";
         } else {
             msg += "Sin datos del dispositivo\n";
         }
 
-        msg += `\n⏰ Hora VZLA: ${hora}`;
+        msg += `\n⏰ Hora: ${ts}`;
+        if (latitude && longitude) {
+            msg += `\n🌍 Google Maps: https://www.google.com/maps?q=${latitude},${longitude}`;
+        }
 
-        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: process.env.TELEGRAM_CHAT_ID,
-                text: msg,
-                parse_mode: 'HTML',
-                disable_web_page_preview: true
-            })
-        });
+        // Enviar a Telegram
+        await sendToTelegram(msg);
 
-        visitaTemporal = null; // limpiar
-        res.json({ status: 'logged' });
+        // Limpiar temporal
+        visitaTemporal = null;
+
+        res.json({ status: 'logged', timestamp: ts });
     } catch (err) {
+        console.error("Error en /location:", err);
         res.status(500).json({ error: "Error" });
     }
 });
-
-
-// =======================
-// INICIAR SERVIDOR
-// =======================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("API lista en puerto", PORT));
