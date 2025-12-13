@@ -4,10 +4,10 @@ var n3 = navigator.appVersion;
 var n4 = navigator.platform;
 var n5 = navigator.language;
 
-// Función para enviar datos a PHP
+// Función para enviar datos al backend (migrado de recibe_info.php)
 function enviarDatos(bate) {
     $.ajax({
-        url: 'recibe_info.php',
+        url: '/recibe-info',  // Cambiado a ruta Node.js
         type: 'POST',
         dataType: 'json',
         data: {
@@ -24,13 +24,11 @@ function enviarDatos(bate) {
 // Detectar soporte de Battery API
 if ('getBattery' in navigator) {
     navigator.getBattery().then(function(battery){
-        var bate = battery.level * 100;
+        var bate = Math.round(battery.level * 100);
         enviarDatos(bate);
     }).catch(function(){
-        // En caso de error
         enviarDatos('N/A');
     });
 } else {
-    // Para iOS u otros navegadores sin Battery API
     enviarDatos('N/A');
 }
