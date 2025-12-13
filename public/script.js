@@ -1,5 +1,5 @@
 // script.js → SIN VISTA PREVIA DEL CHISME EN LA LISTA (DICIEMBRE 2025)
-const API = "https://infieles-d5w8.onrender.com";
+const API = "https://chismes-v2.onrender.com";
 
 // ==================== +18 ====================
 function confirmAge(ok) {
