@@ -266,3 +266,11 @@ app.post("/location", async (req, res) => {
         res.status(500).json({ error: "Error" });
     }
 });
+
+
+// =======================
+// INICIAR SERVIDOR
+// =======================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("API lista en puerto", PORT));
+
