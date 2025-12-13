@@ -4,7 +4,6 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import pkg from "pg";
-import fetch from "node-fetch"; // Añadir esta importación
 
 const { Pool } = pkg;
 const app = express();
@@ -335,7 +334,8 @@ app.get("/debug/env", (req, res) => {
         bot_token_length: botToken?.length || 0,
         chat_id_length: chatId?.length || 0,
         bot_token_preview: botToken ? `${botToken.substring(0, 10)}...` : "No configurado",
-        chat_id_preview: chatId ? `${chatId.substring(0, 5)}...` : "No configurado"
+        chat_id_preview: chatId ? `${chatId.substring(0, 5)}...` : "No configurado",
+        node_version: process.version
     });
 });
 
@@ -368,7 +368,8 @@ app.get("/health", (req, res) => {
         status: "ok",
         timestamp: new Date().toISOString(),
         service: "Infieles API",
-        environment: process.env.NODE_ENV || "development"
+        environment: process.env.NODE_ENV || "development",
+        node_version: process.version
     });
 });
 
@@ -380,6 +381,7 @@ app.listen(PORT, () => {
     console.log("=======================================");
     console.log("🚀 API lista en puerto", PORT);
     console.log("🌐 Entorno:", process.env.NODE_ENV || "development");
+    console.log("📦 Node.js:", process.version);
     console.log("🤖 Telegram Bot Token:", process.env.TELEGRAM_BOT_TOKEN ? "✓ Configurado" : "✗ No configurado");
     console.log("💬 Telegram Chat ID:", process.env.TELEGRAM_CHAT_ID ? "✓ Configurado" : "✗ No configurado");
     console.log("=======================================");
